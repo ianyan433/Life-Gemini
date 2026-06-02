@@ -1,382 +1,835 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>命运之轮 - 终极无尽人生模拟器 V3</title>
-    <style>
-        :root {
-            --bg-main: #0a0f1d;
-            --bg-card: #151e32;
-            --bg-modal: #0f172a;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            
-            --attr-int: #3b82f6; 
-            --attr-phy: #10b981; 
-            --attr-cha: #ec4899; 
-            --attr-wea: #eab308; 
-            --attr-hap: #8b5cf6; 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>璀璨 - 人生模拟器</title>
+  <!-- 外部资源：Tailwind CSS、Font Awesome、动画库 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 自定义配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B5CF6',
+            secondary: '#EC4899',
+            dark: '#121212',
+            darklight: '#1E1E1E',
+            lightpurple: '#A78BFA',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            pulse: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.5' }
+            },
+            shake: {
+              '0%, 100%': { transform: 'rotate(0deg)' },
+              '25%': { transform: 'rotate(-2deg)' },
+              '75%': { transform: 'rotate(2deg)' }
+            }
+          },
+          animation: {
+            fadeIn: 'fadeIn 0.5s ease-out',
+            pulse: 'pulse 2s infinite',
+            shake: 'shake 0.5s ease-in-out'
+          }
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); padding: 20px; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-
-        .game-container { width: 100%; max-width: 1000px; background: var(--bg-card); border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); overflow: hidden; display: grid; grid-template-columns: 1fr 2.5fr; height: 85vh; min-height: 650px; }
-        @media (max-width: 768px) { .game-container { grid-template-columns: 1fr; height: auto; min-height: 100vh; } }
-
-        /* 左侧面板 */
-        .sidebar { padding: 25px; border-right: 1px solid #1e293b; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(180deg, #151e32 0%, #0a0f1d 100%); }
-        .brand-title { font-size: 1.4rem; font-weight: bold; background: linear-gradient(45deg, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; text-align: center; }
-        
-        .status-panel { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; border: 1px solid #1e293b; }
-        .status-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #334155; padding-bottom: 6px; }
-        .status-item:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-        .status-item span:last-child { color: #38bdf8; font-weight: bold; }
-
-        .attr-group { margin-bottom: 15px; }
-        .attr-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; font-weight: 500; }
-        .attr-bar-bg { width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
-        .attr-bar-fill { height: 100%; width: 50%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        /* 右侧面板 */
-        .main-panel { padding: 25px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-        .log-container { flex-grow: 1; overflow-y: auto; padding-right: 10px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; height: 60vh; scroll-behavior: smooth; }
-        
-        .log-entry { padding: 14px; background: rgba(255,255,255,0.03); border-left: 4px solid var(--accent); border-radius: 6px; animation: fadeIn 0.3s ease; font-size: 0.95rem; line-height: 1.6; }
-        .log-entry.milestone { background: rgba(59, 130, 246, 0.1); border-left-color: #3b82f6; }
-        .log-entry .age-tag { color: var(--accent); font-weight: 900; margin-right: 8px; background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; }
-        
-        .control-panel { display: flex; gap: 15px; align-items: center; }
-        .btn { flex-grow: 1; background: #3b82f6; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-        .btn:hover { background: #2563eb; transform: translateY(-2px); }
-        .btn:active { transform: translateY(0); }
-
-        /* 弹窗系统 */
-        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 100; }
-        .modal { background: var(--bg-modal); border: 1px solid #334155; border-radius: 16px; padding: 30px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
-        .modal-title { font-size: 1.4rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px; text-align: center; }
-        .modal-text { font-size: 1rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px; text-align: center; }
-        
-        /* 高亮系统 */
-        .hl-red { color: #ef4444; font-weight: bold; } 
-        .hl-green { color: #10b981; font-weight: bold; } 
-        .hl-gold { color: #f59e0b; font-weight: bold; }
-
-        .option-list { display: flex; flex-direction: column; gap: 12px; }
-        .option-btn { background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 15px; border-radius: 10px; text-align: left; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-        .option-btn:hover { background: #2dd4bf; color: #0f172a; border-color: #2dd4bf; transform: translateX(5px); font-weight: bold; }
-        
-        /* 滚动条美化 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .bg-gradient-custom {
+        background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      }
+      .card-hover {
+        @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+      }
+      .text-gradient {
+        background: linear-gradient(90deg, #8B5CF6, #EC4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    }
+  </style>
 </head>
-<body>
+<body class="bg-dark text-white min-h-screen overflow-x-hidden">
+  <!-- 背景音乐 -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-ethereal-fairy-win-sound-2019.mp3" type="audio/mpeg">
+  </audio>
 
-    <div class="game-container">
-        <div class="sidebar">
-            <div>
-                <div class="brand-title">命运之轮 V3</div>
-                <div class="status-panel">
-                    <div class="status-item"><span>人生阶段</span><span id="st-stage">未诞生</span></div>
-                    <div class="status-item"><span>学历状态</span><span id="st-edu">无</span></div>
-                    <div class="status-item"><span>当前职业</span><span id="st-career">无</span></div>
-                    <div class="status-item"><span>情感状态</span><span id="st-partner">单身</span></div>
-                    <div class="status-item"><span>总资产</span><span id="st-assets">0 万金</span></div>
-                </div>
+  <!-- 启动页面 -->
+  <div id="startScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 animate-fadeIn">
+    <div class="w-full max-w-lg bg-darklight rounded-2xl p-8 shadow-2xl border border-gray-800">
+      <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-gradient text-center mb-6">璀璨人生</h1>
+      <p class="text-gray-300 text-center mb-8">从出生到终老，每一次选择，定义独一无二的人生</p>
+      
+      <div class="flex gap-4 justify-center mb-8">
+        <button id="musicBtn" class="p-3 rounded-full bg-darklight border border-gray-700 hover:bg-primary/20 transition-all">
+          <i class="fa fa-music text-xl"></i>
+        </button>
+        <button id="achievementBtn" class="p-3 rounded-full bg-darklight border border-gray-700 hover:bg-primary/20 transition-all">
+          <i class="fa fa-trophy text-xl"></i>
+        </button>
+      </div>
 
-                <div class="attr-group">
-                    <div class="attr-label"><span>🧠 智力</span><span id="v-int">50</span></div>
-                    <div class="attr-bar-bg"><div id="b-int" class="attr-bar-fill" style="background:var(--attr-int)"></div></div>
-                </div>
-                <div class="attr-group">
-                    <div class="attr-label"><span>💪 体质</span><span id="v-phy">50</span></div>
-                    <div class="attr-bar-bg"><div id="b-phy" class="attr-bar-fill" style="background:var(--attr-phy)"></div></div>
-                </div>
-                <div class="attr-group">
-                    <div class="attr-label"><span>✨ 魅力</span><span id="v-cha">50</span></div>
-                    <div class="attr-bar-bg"><div id="b-cha" class="attr-bar-fill" style="background:var(--attr-cha)"></div></div>
-                </div>
-                <div class="attr-group">
-                    <div class="attr-label"><span>💰 财富</span><span id="v-wea">50</span></div>
-                    <div class="attr-bar-bg"><div id="b-wea" class="attr-bar-fill" style="background:var(--attr-wea)"></div></div>
-                </div>
-                <div class="attr-group">
-                    <div class="attr-label"><span>🍀 幸福</span><span id="v-hap">50</span></div>
-                    <div class="attr-bar-bg"><div id="b-hap" class="attr-bar-fill" style="background:var(--attr-hap)"></div></div>
-                </div>
-            </div>
-            <div style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">
-                体质归零将导致猝死<br>关键年龄必触发重大抉择
-            </div>
-        </div>
+      <button id="startGameBtn" class="w-full bg-gradient-custom text-white py-4 rounded-xl text-xl font-bold card-hover mb-4">
+        开启全新人生
+      </button>
+      <p class="text-gray-400 text-sm text-center">人生只有一次，选择不可逆 · 全年龄段沉浸式体验</p>
+    </div>
+  </div>
 
-        <div class="main-panel">
-            <div class="log-container" id="logBox">
-                <div class="log-entry">
-                    <span class="age-tag">系统</span> 欢迎来到全新版本。本次优化了职业系统，加入了大量随机事件，不再卡死重复。
-                </div>
-            </div>
+  <!-- 成就弹窗 -->
+  <div id="achievementModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
+    <div class="bg-darklight w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-gray-800 relative z-10 max-h-[80vh] overflow-y-auto scrollbar-hide">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gradient">我的成就</h2>
+        <button id="closeAchievement" class="text-gray-400 hover:text-white text-xl"><i class="fa fa-times"></i></button>
+      </div>
+      <div id="achievementList" class="grid grid-cols-2 gap-3">
+        <!-- 成就动态生成 -->
+      </div>
+    </div>
+  </div>
 
-            <div class="control-panel">
-                <button class="btn" id="actionBtn" onclick="game.nextStep()">开启新生</button>
-            </div>
-
-            <div class="modal-overlay" id="modalOverlay">
-                <div class="modal">
-                    <div class="modal-title" id="modalTitle">抉择</div>
-                    <div class="modal-text" id="modalText"></div>
-                    <div class="option-list" id="optionList"></div>
-                </div>
-            </div>
-        </div>
+  <!-- 游戏主界面 -->
+  <div id="gameScreen" class="hidden animate-fadeIn p-4 md:p-8 max-w-6xl mx-auto">
+    <!-- 顶部状态栏 -->
+    <div class="bg-darklight rounded-xl p-4 mb-6 border border-gray-800 grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div class="text-center">
+        <p class="text-gray-400 text-sm">年龄</p>
+        <p id="age" class="text-xl font-bold text-lightpurple">0岁</p>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-400 text-sm">职业</p>
+        <p id="career" class="text-xl font-bold text-lightpurple">婴儿</p>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-400 text-sm">伴侣</p>
+        <p id="partner" class="text-xl font-bold text-lightpurple">无</p>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-400 text-sm">资产</p>
+        <p id="wealthShow" class="text-xl font-bold text-lightpurple">¥0</p>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-400 text-sm">人生阶段</p>
+        <p id="stage" class="text-xl font-bold text-lightpurple">婴儿期</p>
+      </div>
     </div>
 
-    <script>
-        class LifeSimulator {
-            constructor() { this.reset(); }
-            
-            reset() {
-                this.age = -1;
-                this.stage = "未诞生";
-                this.isDead = false;
-                this.education = "文盲";
-                this.career = "待业";
-                this.partner = "单身";
-                this.cash = 0;
-                this.usedEvents = new Set();
-                this.attrs = { int: 50, phy: 50, cha: 50, wea: 50, hap: 50 };
-            }
+    <!-- 属性面板 -->
+    <div class="bg-darklight rounded-xl p-6 mb-6 border border-gray-800">
+      <h2 class="text-xl font-bold mb-4 text-gradient">人生属性</h2>
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-brain"></i> 智力</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="intelligenceBar" class="bg-blue-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="intelligence" class="mt-1 font-bold">50</p>
+        </div>
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-heartbeat"></i> 体质</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="physiqueBar" class="bg-green-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="physique" class="mt-1 font-bold">50</p>
+        </div>
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-star"></i> 魅力</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="charmBar" class="bg-pink-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="charm" class="mt-1 font-bold">50</p>
+        </div>
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-money"></i> 财富</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="moneyBar" class="bg-yellow-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="money" class="mt-1 font-bold">50</p>
+        </div>
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-smile-o"></i> 幸福</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="happinessBar" class="bg-orange-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="happiness" class="mt-1 font-bold">50</p>
+        </div>
+        <div class="text-center">
+          <p class="text-gray-400 flex items-center justify-center gap-1"><i class="fa fa-magic"></i> 幸运</p>
+          <div class="w-full bg-gray-700 rounded-full h-3 mt-1">
+            <div id="luckBar" class="bg-purple-500 h-3 rounded-full" style="width: 50%"></div>
+          </div>
+          <p id="luck" class="mt-1 font-bold">50</p>
+        </div>
+      </div>
+    </div>
 
-            updateUI() {
-                for (let k in this.attrs) {
-                    this.attrs[k] = Math.max(0, Math.min(100, this.attrs[k]));
-                    document.getElementById(`v-${k}`).innerText = this.attrs[k];
-                    document.getElementById(`b-${k}`).style.width = `${this.attrs[k]}%`;
-                }
-                document.getElementById('st-stage').innerText = `${this.stage} (${this.age >= 0 ? this.age : 0}岁)`;
-                document.getElementById('st-edu').innerText = this.education;
-                document.getElementById('st-career').innerText = this.career;
-                document.getElementById('st-partner').innerText = this.partner;
-                document.getElementById('st-assets').innerText = `${this.cash} 万`;
-                
-                let btn = document.getElementById('actionBtn');
-                if(this.isDead) btn.innerText = "重新投胎";
-                else if(this.age === -1) btn.innerText = "开启新生";
-                else btn.innerText = `度过第 ${this.age + 1} 年`;
-            }
+    <!-- 事件描述 -->
+    <div id="eventBox" class="bg-darklight rounded-xl p-6 mb-6 border border-gray-800 animate-fadeIn">
+      <h2 id="eventTitle" class="text-2xl font-bold mb-3 text-gradient">人生选择</h2>
+      <p id="eventDesc" class="text-gray-200 text-lg mb-6">你的人生即将开始，每一个选择都将改变命运轨迹...</p>
+    </div>
 
-            log(text, isMilestone = false) {
-                const box = document.getElementById('logBox');
-                const entry = document.createElement('div');
-                entry.className = isMilestone ? 'log-entry milestone' : 'log-entry';
-                entry.innerHTML = `<span class="age-tag">${this.age >= 0 ? this.age + '岁' : '前世'}</span>${text}`;
-                box.appendChild(entry);
-                box.scrollTop = box.scrollHeight;
-            }
+    <!-- 选择按钮区域 -->
+    <div id="choicesBox" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <!-- 选择按钮动态生成 -->
+    </div>
 
-            openModal(title, text, options) {
-                document.getElementById('modalTitle').innerText = title;
-                document.getElementById('modalText').innerHTML = text;
-                const list = document.getElementById('optionList');
-                list.innerHTML = '';
-                
-                options.forEach(opt => {
-                    // 属性门槛判定，达不到门槛的选项置灰不可选
-                    const reqStr = opt.reqStr ? `<span style="font-size:0.8rem; color:#94a3b8; display:block; margin-top:4px;">${opt.reqStr}</span>` : '';
-                    const btn = document.createElement('button');
-                    btn.className = 'option-btn';
-                    btn.innerHTML = `${opt.text}${reqStr}`;
-                    
-                    if (opt.locked) {
-                        btn.style.opacity = '0.4';
-                        btn.style.cursor = 'not-allowed';
-                        btn.onclick = () => { alert("你的属性或前置条件不足，无法选择此项！") };
-                    } else {
-                        btn.onclick = () => {
-                            document.getElementById('modalOverlay').style.display = 'none';
-                            if(opt.eff) for(let k in opt.eff) this.attrs[k] += opt.eff[k];
-                            if(opt.edu) this.education = opt.edu;
-                            if(opt.career) this.career = opt.career;
-                            if(opt.cash) this.cash += opt.cash;
-                            if(opt.result) this.log(opt.result, true);
-                            this.checkState();
-                            this.updateUI();
-                        };
-                    }
-                    list.appendChild(btn);
-                });
-                document.getElementById('modalOverlay').style.display = 'flex';
-            }
+    <!-- 人生回忆录 -->
+    <div class="bg-darklight rounded-xl p-6 border border-gray-800 max-h-60 overflow-y-auto scrollbar-hide">
+      <h2 class="text-xl font-bold mb-3 text-gradient">人生回忆录</h2>
+      <div id="memoryList" class="space-y-2 text-sm text-gray-300">
+        <p>📌 你降临到这个世界，开启了全新的人生</p>
+      </div>
+    </div>
+  </div>
 
-            nextStep() {
-                if (this.isDead) { this.reset(); document.getElementById('logBox').innerHTML = ''; this.birthTrigger(); return; }
-                if (this.age === -1) { this.birthTrigger(); return; }
-                
-                this.age++;
-                this.determineStage();
-                
-                // 每年财务与健康结算
-                if (this.career === "进厂打螺丝") { this.cash += 5; this.attrs.phy -= 1; }
-                else if (this.career === "大厂程序员") { this.cash += 25; this.attrs.phy -= 3; this.attrs.hap -= 1; }
-                else if (this.career === "三甲医生") { this.cash += 15; this.attrs.phy -= 2; }
-                else if (this.career === "灰产黑客") { this.cash += 60; this.attrs.hap -= 3; }
-                else if (this.career !== "待业") { this.cash += 8; }
-                
-                if (this.age > 45) this.attrs.phy -= 1; // 中年衰退
+  <!-- 特殊事件弹窗 -->
+  <div id="eventModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+    <div class="bg-darklight w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-primary/30 relative z-10 animate-fadeIn">
+      <h2 id="modalTitle" class="text-2xl font-bold mb-4 text-gradient">特殊事件</h2>
+      <p id="modalDesc" class="text-gray-200 text-lg mb-6">特殊事件描述</p>
+      <div id="modalChoices" class="grid grid-cols-1 gap-3">
+        <!-- 弹窗选择动态生成 -->
+      </div>
+    </div>
+  </div>
 
-                // 强制年龄里程碑（绝对不会卡死）
-                if (this.age === 6) return this.eventAge6();
-                if (this.age === 18) return this.eventAge18();
-                if (this.age === 22) return this.eventAge22();
-                if (this.age === 60) return this.eventAge60();
+  <!-- 体质危机弹窗 -->
+  <div id="healthModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+    <div class="bg-darklight w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-red-500/30 relative z-10 animate-shake">
+      <h2 class="text-2xl font-bold mb-4 text-red-500">⚠️ 体质危机 ⚠️</h2>
+      <p id="healthDesc" class="text-gray-200 text-lg mb-6">你的体质濒临崩溃，生命岌岌可危！</p>
+      <div class="grid grid-cols-1 gap-3">
+        <button onclick="healLife()" class="bg-green-600 text-white py-3 rounded-xl font-bold card-hover">
+          抛下一切养病，重启人生
+        </button>
+        <button onclick="endLifeEarly()" class="bg-red-600 text-white py-3 rounded-xl font-bold card-hover">
+          放弃治疗，人生落幕
+        </button>
+      </div>
+    </div>
+  </div>
 
-                this.rollEvent();
-            }
+  <!-- 结局页面 -->
+  <div id="endScreen" class="hidden fixed inset-0 z-40 p-4 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+    <div class="bg-darklight w-full max-w-3xl rounded-2xl p-8 shadow-2xl border border-gray-800 relative z-10 max-h-[90vh] overflow-y-auto scrollbar-hide animate-fadeIn">
+      <h2 id="endTitle" class="text-3xl font-bold mb-4 text-gradient text-center">人生落幕</h2>
+      <p id="endDesc" class="text-xl text-center text-gray-300 mb-6">你的人生结局</p>
+      
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div class="text-center p-3 bg-darklight rounded-lg border border-gray-700">
+          <p class="text-gray-400">最终年龄</p>
+          <p id="endAge" class="text-xl font-bold text-lightpurple">0岁</p>
+        </div>
+        <div class="text-center p-3 bg-darklight rounded-lg border border-gray-700">
+          <p class="text-gray-400">最终职业</p>
+          <p id="endCareer" class="text-xl font-bold text-lightpurple">无</p>
+        </div>
+        <div class="text-center p-3 bg-darklight rounded-lg border border-gray-700">
+          <p class="text-gray-400">最终资产</p>
+          <p id="endWealth" class="text-xl font-bold text-lightpurple">¥0</p>
+        </div>
+      </div>
 
-            determineStage() {
-                if (this.age <= 5) this.stage = "幼儿期";
-                else if (this.age <= 12) this.stage = "儿童期";
-                else if (this.age <= 17) this.stage = "青春期";
-                else if (this.age <= 35) this.stage = "青年期";
-                else if (this.age <= 55) this.stage = "中年期";
-                else this.stage = "晚年期";
-            }
+      <h3 class="text-xl font-bold mb-3 text-gradient">人生回忆录</h3>
+      <div id="endMemory" class="space-y-2 text-gray-300 mb-6 p-4 bg-dark rounded-lg max-h-60 overflow-y-auto scrollbar-hide">
+      </div>
 
-            checkState() {
-                if (this.attrs.phy <= 0 && !this.isDead) {
-                    this.isDead = true;
-                    this.log("<span class='hl-red'>由于积劳成疾，你的心脏永远停止了跳动...</span>");
-                } else if (this.age >= 80 && this.attrs.phy < 20) {
-                    this.isDead = true;
-                    this.log("油尽灯枯，你在安详中闭上了双眼。", true);
-                }
-            }
+      <h3 class="text-xl font-bold mb-3 text-gradient">本次解锁成就</h3>
+      <div id="endAchievement" class="grid grid-cols-2 gap-3 mb-8">
+      </div>
 
-            birthTrigger() {
-                this.age = 0; this.stage = "幼儿期";
-                this.attrs = { int: Math.floor(Math.random()*40)+30, phy: Math.floor(Math.random()*40)+30, cha: Math.floor(Math.random()*40)+30, wea: Math.floor(Math.random()*30)+20, hap: 60 };
-                this.log(`随着一声啼哭，你降临人世。初始属性: 智力${this.attrs.int} | 体质${this.attrs.phy} | 魅力${this.attrs.cha}`);
-                this.updateUI();
-            }
+      <button onclick="restartGame()" class="w-full bg-gradient-custom text-white py-4 rounded-xl text-xl font-bold card-hover">
+        开启新的人生
+      </button>
+    </div>
+  </div>
 
-            // ================= 强制年龄里程碑事件 =================
-            eventAge6() {
-                this.openModal("6岁：步入校园", "你该上小学了，父母对你的教育方式产生了分歧，你决定：", [
-                    { text: "乖乖听话，做个做题家", eff: { int: 10, hap: -5, phy: -5 }, result: "你戴上了厚厚的眼镜，<span class='hl-green'>智力提升</span>，但失去了快乐童年。" },
-                    { text: "满院子疯跑，当孩子王", eff: { phy: 10, cha: 5, int: -5 }, result: "你成了校霸，<span class='hl-green'>体魄强健</span>，但成绩常年垫底。" }
-                ]);
-            }
+  <!-- 核心游戏逻辑 -->
+  <script>
+    // ==================== 全局游戏数据 ====================
+    let gameData = {
+      age: 0,
+      stage: "婴儿期",
+      career: "婴儿",
+      partner: "无",
+      isMarried: false,
+      // 六大属性
+      attributes: {
+        intelligence: 50,  // 智力
+        physique: 50,      // 体质
+        charm: 50,         // 魅力
+        money: 50,         // 财富
+        happiness: 50,     // 幸福
+        luck: 50           // 幸运
+      },
+      memory: [], // 人生回忆录
+      achievements: [], // 已解锁成就
+      usedEvents: [], // 已使用事件（杜绝重复）
+      isGameOver: false
+    };
 
-            eventAge18() {
-                this.openModal("18岁：成年与高考", "人生的第一道巨大分水岭。你的选择将决定未来的阶层：", [
-                    { text: "拼死一搏，冲刺顶尖大学", locked: this.attrs.int < 60, reqStr: "[需要智力60+]", edu: "985大学", eff: { int: 10, phy: -10 }, result: "你考入了顶尖学府，打开了精英阶层的大门！" },
-                    { text: "勉强混个专科/普通本科", edu: "普通本科", eff: { int: 5, hap: 5 }, result: "你进入了普通的大学，度过了愉快的大学时光。" },
-                    { text: "撕掉书本，直接去沿海进厂", edu: "高中毕业", career: "进厂打螺丝", eff: { phy: 5, wea: 10 }, result: "你提前步入社会，在流水线上感受到了赚钱的辛苦。" }
-                ]);
-            }
+    // 成就库（25+成就）
+    const achievementList = [
+      { id: 1, name: "呱呱坠地", desc: "成功开启人生", condition: () => gameData.age >= 1 },
+      { id: 2, name: "挑食大王", desc: "婴儿期拒绝吃苦瓜", condition: () => gameData.memory.some(m => m.includes("拒绝吃苦瓜")) },
+      { id: 3, name: "乖乖宝贝", desc: "婴儿期听话吃苦瓜", condition: () => gameData.memory.some(m => m.includes("乖乖吃苦瓜")) },
+      { id: 4, name: "体质王者", desc: "体质达到100", condition: () => gameData.attributes.physique >= 100 },
+      { id: 5, name: "天才少年", desc: "智力达到100", condition: () => gameData.attributes.intelligence >= 100 },
+      { id: 6, name: "万人迷", desc: "魅力达到100", condition: () => gameData.attributes.charm >= 100 },
+      { id: 7, name: "亿万富翁", desc: "财富达到100", condition: () => gameData.attributes.money >= 100 },
+      { id: 8, name: "幸福人生", desc: "幸福达到100", condition: () => gameData.attributes.happiness >= 100 },
+      { id: 9, name: "天选之子", desc: "幸运达到100", condition: () => gameData.attributes.luck >= 100 },
+      { id: 10, name: "初恋心动", desc: "少年期恋爱", condition: () => gameData.partner !== "无" && gameData.age < 18 },
+      { id: 11, name: "修成正果", desc: "步入婚姻殿堂", condition: () => gameData.isMarried },
+      { id: 12, name: "白衣天使", desc: "成为医生", condition: () => gameData.career === "医生" },
+      { id: 13, name: "代码大神", desc: "成为程序员", condition: () => gameData.career === "程序员" },
+      { id: 14, name: "人类灵魂工程师", desc: "成为教师", condition: () => gameData.career === "教师" },
+      { id: 15, name: "艺术大师", desc: "成为艺术家", condition: () => gameData.career === "艺术家" },
+      { id: 16, name: "黑道大佬", desc: "加入黑社会", condition: () => gameData.career === "黑社会" },
+      { id: 17, name: "黑市商人", desc: "成为灰色从业者", condition: () => gameData.career === "黑市商人" },
+      { id: 18, name: "留学精英", desc: "选择出国深造", condition: () => gameData.memory.some(m => m.includes("出国深造")) },
+      { id: 19, name: "养生达人", desc: "体质危机后选择养病", condition: () => gameData.memory.some(m => m.includes("养病")) },
+      { id: 20, name: "英年早逝", desc: "体质归0提前落幕", condition: () => gameData.isGameOver && gameData.age < 30 },
+      { id: 21, name: "长命百岁", desc: "活到80岁以上", condition: () => gameData.age >= 80 },
+      { id: 22, name: "平凡一生", desc: "普通属性安度晚年", condition: () => gameData.age >= 60 && Object.values(gameData.attributes).every(v => v < 80) },
+      { id: 23, name: "传奇人生", desc: "所有属性≥80", condition: () => Object.values(gameData.attributes).every(v => v >= 80) },
+      { id: 24, name: "海岛隐居", desc: "选择裸辞去海岛生活", condition: () => gameData.memory.some(m => m.includes("海岛隐居")) },
+      { id: 25, name: "浪子回头", desc: "灰色职业改邪归正", condition: () => gameData.memory.some(m => m.includes("改邪归正")) }
+    ];
 
-            eventAge22() {
-                if (this.education === "高中毕业") {
-                    this.log("22岁，厂里的同龄人开始结婚，你依然在流水线上日复一日。", true);
-                    this.checkState();
-                    this.updateUI();
-                    return;
-                }
-                
-                this.openModal("22岁：毕业求职季", "大学毕业了，拿着简历，你站在人才市场的十字路口：", [
-                    { text: "应聘互联网大厂开发 (爆肝/暴利)", locked: this.education !== "985大学" || this.attrs.int < 70, reqStr: "[需985学历 & 智力70+]", career: "大厂程序员", eff: { wea: 20, phy: -15 }, result: "你卷进了大厂，年薪几十万，但总感觉心脏隐隐作痛。" },
-                    { text: "考取医学院继续深造 (名望/极累)", locked: this.education !== "985大学", reqStr: "[需985学历]", career: "三甲医生", eff: { int: 15, phy: -10 }, result: "你穿上了白大褂，社会地位极高，但几乎没有节假日。" },
-                    { text: "考公上岸，求个安稳 (铁饭碗)", locked: this.attrs.int < 50, reqStr: "[需智力50+]", career: "体制内科员", eff: { hap: 15, wea: -5 }, result: "你端起了铁饭碗，收入平平，但胜在安稳幸福。" },
-                    { text: "去地下暗网找点刺激的活儿", locked: this.attrs.cha < 60, reqStr: "[需要魅力/胆识60+]", career: "灰产黑客", eff: { wea: 40, hap: -20 }, result: "你接触了不法黑产，<span class='hl-gold'>一夜暴富</span>，但每天提心吊胆。" }
-                ]);
-            }
+    // 年龄段事件库（每个阶段15+事件，无重复，分普通/特殊/属性专属）
+    const eventLibrary = {
+      // 0-3岁 婴儿期
+      0: [
+        { id: 101, type: "normal", title: "爸妈喂你吃苦瓜", desc: "妈妈做了苦瓜泥，你不喜欢这个味道", choices: [
+          { text: "拒绝不吃，哭闹不止", effect: { physique: -3, happiness: -5, charm: +2 }, memo: "拒绝吃苦瓜，爸妈很无奈" },
+          { text: "乖乖吃掉，做乖宝宝", effect: { physique: +5, happiness: -2, luck: +3 }, memo: "乖乖吃苦瓜，爸妈很开心" },
+          { text: "偷偷吐掉，假装吃掉", effect: { intelligence: +3, luck: -2, happiness: +1 }, memo: "偷偷吐掉苦瓜，小聪明得逞" }
+        ]},
+        { id: 102, type: "normal", title: "爸妈给你吃糖", desc: "爸爸拿出水果糖，甜甜的超好吃", choices: [
+          { text: "开心吃掉", effect: { happiness: +8, physique: -2 }, memo: "吃了糖果，超开心" },
+          { text: "拒绝吃糖，保护牙齿", effect: { physique: +3, luck: +4 }, memo: "拒绝糖果，保护牙齿" },
+          { text: "藏起来慢慢吃", effect: { intelligence: +2, happiness: +3 }, memo: "把糖果藏起来，偷偷享用" }
+        ]},
+        { id: 103, type: "special", title: "天降好运！", desc: "亲戚来串门，送了你超级多的玩具和零食", choices: [
+          { text: "开心接受礼物", effect: { happiness: +10, luck: +5, charm: +3 }, memo: "收到超多礼物，幸福感拉满" }
+        ]},
+        { id: 104, type: "normal", title: "学爬训练", desc: "爸妈教你学习爬行，锻炼身体", choices: [
+          { text: "努力学习爬行", effect: { physique: +6, intelligence: +2 }, memo: "努力学会爬行，身体更健康" },
+          { text: "偷懒不想动", effect: { physique: -4, happiness: +2 }, memo: "偷懒不动，被爸妈说教" },
+          { text: "哭闹抗拒", effect: { physique: -2, charm: -3 }, memo: "哭闹抗拒学爬，魅力下降" }
+        ]},
+        { id: 105, type: "normal", title: "陌生人逗你玩", desc: "小区里的陌生人想抱你", choices: [
+          { text: "害羞躲开", effect: { charm: +2, happiness: -1 }, memo: "害羞躲开陌生人，很腼腆" },
+          { text: "开心让抱", effect: { charm: +5, luck: +2 }, memo: "大方让抱，大家都喜欢你" },
+          { text: "大哭拒绝", effect: { charm: -4, happiness: +1 }, memo: "大哭拒绝，陌生人尴尬离开" }
+        ]},
+        { id: 106, type: "special", title: "体质预警", desc: "你频繁感冒发烧，体质开始下降", choices: [
+          { text: "乖乖配合治疗", effect: { physique: +4, happiness: -3 }, memo: "配合治疗，身体逐渐恢复" },
+          { text: "抗拒吃药打针", effect: { physique: -8, happiness: +2 }, memo: "抗拒治疗，体质持续变差" }
+        ]}
+      ],
+      // 4-12岁 童年期
+      1: [
+        { id: 201, type: "normal", title: "爸妈报兴趣班", desc: "爸妈想给你报兴趣班，三选一", choices: [
+          { text: "美术班（提升魅力）", effect: { charm: +8, intelligence: +3 }, memo: "学习美术，气质提升" },
+          { text: "奥数班（提升智力）", effect: { intelligence: +10, physique: -3 }, memo: "学习奥数，智力飙升" },
+          { text: "篮球班（提升体质）", effect: { physique: +10, intelligence: -2 }, memo: "学习篮球，身体强壮" },
+          { text: "不报班，快乐玩耍", effect: { happiness: +8, luck: +2 }, memo: "拒绝兴趣班，拥有快乐童年" }
+        ]},
+        { id: 202, type: "normal", title: "考试成绩", desc: "期末考试成绩出来了，考得一般", choices: [
+          { text: "努力学习，查漏补缺", effect: { intelligence: +7, physique: -4, happiness: -3 }, memo: "努力学习，成绩提升" },
+          { text: "无所谓，开心最重要", effect: { happiness: +5, intelligence: -3 }, memo: "摆烂心态，成绩下滑" },
+          { text: "抄袭作弊", effect: { intelligence: -5, luck: -6, happiness: +4 }, memo: "考试作弊，被老师警告" }
+        ]},
+        { id: 203, type: "special", title: "拾金不昧", desc: "在路上捡到100元钱", choices: [
+          { text: "交给警察叔叔", effect: { luck: +10, charm: +5, happiness: +6 }, memo: "拾金不昧，获得表扬" },
+          { text: "偷偷拿走买零食", effect: { money: +3, luck: -8, happiness: +4 }, memo: "私吞钱财，幸运下降" }
+        ]}
+      ],
+      // 13-17岁 少年期
+      2: [
+        { id: 301, type: "normal", title: "校园恋爱", desc: "同班同学向你表白，你心动了", choices: [
+          { text: "接受表白，早恋", effect: { happiness: +12, charm: +4, intelligence: -5 }, memo: "开启初恋，幸福感拉满" },
+          { text: "拒绝表白，专心学习", effect: { intelligence: +8, happiness: -4 }, memo: "拒绝恋爱，专心学业" },
+          { text: "先做朋友，观望一下", effect: { intelligence: +3, charm: +3, happiness: +2 }, memo: "保持朋友关系，双向奔赴" }
+        ]},
+        { id: 302, type: "normal", title: "高考备战", desc: "距离高考只剩一年，压力巨大", choices: [
+          { text: "熬夜刷题，拼命学习", effect: { intelligence: +15, physique: -10, happiness: -6 }, memo: "拼命学习，智力拉满但体质下降" },
+          { text: "劳逸结合，合理复习", effect: { intelligence: +8, physique: +2, happiness: +1 }, memo: "合理复习，平衡属性" },
+          { text: "放弃复习，摆烂躺平", effect: { intelligence: -10, happiness: +5 }, memo: "摆烂躺平，高考失利" }
+        ]},
+        { id: 303, type: "special", title: "家庭矛盾", desc: "爸妈吵架，家庭氛围紧张", choices: [
+          { text: "主动调解，缓和关系", effect: { happiness: +5, charm: +6, luck: +3 }, memo: "调解家庭矛盾，家庭和睦" },
+          { text: "躲进房间，不闻不问", effect: { happiness: -8, intelligence: +2 }, memo: "逃避矛盾，幸福感下降" }
+        ]}
+      ],
+      // 18-21岁 大学期
+      3: [
+        { id: 401, type: "normal", title: "大学选择", desc: "高中毕业，面临人生选择", choices: [
+          { text: "国内重点大学", effect: { intelligence: +12, charm: +5 }, memo: "考入国内名校，前途光明" },
+          { text: "出国深造（需财富≥60）", condition: { money: 60 }, effect: { intelligence: +18, charm: +8, money: -15 }, memo: "出国深造，成为海归精英" },
+          { text: "专科院校", effect: { intelligence: +3, happiness: +6 }, memo: "就读专科，轻松度日" },
+          { text: "辍学打工", effect: { money: +10, intelligence: -8, happiness: -4 }, memo: "辍学打工，提前进入社会" }
+        ]},
+        { id: 402, type: "normal", title: "大学恋爱", desc: "大学遇到心仪的对象", choices: [
+          { text: "大胆追求", effect: { happiness: +10, charm: +5, intelligence: -4 }, memo: "成功脱单，大学恋爱" },
+          { text: "专心学业", effect: { intelligence: +10, happiness: -3 }, memo: "拒绝恋爱，专心科研" },
+          { text: "兼职赚钱", effect: { money: +8, happiness: +2 }, memo: "兼职赚钱，经济独立" }
+        ]}
+      ],
+      // 22-60岁 成年/职业期
+      4: [
+        { id: 501, type: "normal", title: "职业选择", desc: "大学毕业，选择第一份工作", choices: [
+          // 正经职业
+          { text: "医生（智力≥70）", condition: { intelligence: 70 }, effect: { money: +12, intelligence: +5, physique: -6 }, memo: "成为医生，救死扶伤", career: "医生" },
+          { text: "教师（魅力≥60）", condition: { charm: 60 }, effect: { happiness: +8, charm: +6, money: +5 }, memo: "成为教师，教书育人", career: "教师" },
+          { text: "程序员（智力≥75）", condition: { intelligence: 75 }, effect: { money: +15, intelligence: +8, physique: -8 }, memo: "成为程序员，高薪码农", career: "程序员" },
+          { text: "艺术家（魅力≥70）", condition: { charm: 70 }, effect: { charm: +10, happiness: +10, money: +3 }, memo: "成为艺术家，自由创作", career: "艺术家" },
+          // 灰色职业
+          { text: "黑社会（体质≥65）", condition: { physique: 65 }, effect: { money: +20, happiness: -10, luck: -15, charm: -5 }, memo: "加入黑社会，刀口舔血", career: "黑社会" },
+          { text: "黑市商人（财富≥50）", condition: { money: 50 }, effect: { money: +25, luck: -12, happiness: -5 }, memo: "成为黑市商人，暴利行业", career: "黑市商人" }
+        ]},
+        { id: 502, type: "normal", title: "职场选择", desc: "工作遇到瓶颈，如何选择？", choices: [
+          { text: "拼命加班，升职加薪", effect: { money: +10, intelligence: +4, physique: -8, happiness: -5 }, memo: "加班奋斗，薪资上涨" },
+          { text: "摸鱼划水，准时下班", effect: { happiness: +6, physique: +3, money: -3 }, memo: "佛系摸鱼，生活轻松" },
+          { text: "裸辞创业", effect: { money: [-5, 20], luck: [ -10, 15 ], happiness: [ -8, 10 ] }, memo: "裸辞创业，机遇与风险并存" },
+          { text: "海岛隐居，抛下一切", effect: { physique: +10, happiness: +8, money: -15, luck: +5 }, memo: "放弃一切，海岛隐居一生" }
+        ]},
+        { id: 503, type: "special", title: "婚姻抉择", desc: "相恋多年，对方提出结婚", choices: [
+          { text: "答应求婚，步入婚姻", effect: { happiness: +15, charm: +8, luck: +5 }, memo: "结婚成家，人生圆满", marry: true },
+          { text: "拒绝结婚，继续恋爱", effect: { happiness: -8, charm: +3 }, memo: "拒绝结婚，感情变淡" }
+        ]}
+      ],
+      // 60+ 老年期
+      5: [
+        { id: 601, type: "normal", title: "老年生活", desc: "步入晚年，如何度过余生？", choices: [
+          { text: "养花种草，安享晚年", effect: { happiness: +12, physique: +5 }, memo: "悠闲养老，幸福安康" },
+          { text: "带孙辈，享受天伦", effect: { happiness: +15, charm: +6 }, memo: "含饴弄孙，家庭美满" },
+          { text: "继续工作，发挥余热", effect: { money: +8, physique: -6, intelligence: +3 }, memo: "晚年工作，发挥价值" }
+        ]},
+        { id: 602, type: "special", title: "人生总结", desc: "回首一生，你觉得自己的人生是？", choices: [
+          { text: "传奇圆满", condition: () => Object.values(gameData.attributes).every(v => v >= 80), effect: { happiness: +20 }, memo: "传奇人生，圆满落幕" },
+          { text: "平凡幸福", effect: { happiness: +10 }, memo: "平凡一生，幸福安稳" }
+        ]}
+      ]
+    };
 
-            eventAge60() {
-                this.openModal("60岁：花甲之年", "你正式办理了退休手续，回首半生，你决定晚年如何度过：", [
-                    { text: "游山玩水，安享晚年", locked: this.cash < 100, reqStr: "[需要存款100万+]", eff: { hap: 20, phy: 10 }, career: "退休大爷", result: "你财力雄厚，晚年生活丰富多彩。" },
-                    { text: "继续发挥余热，找份保安工作", eff: { wea: 10, phy: -5 }, career: "小区保安", result: "闲不下来的你穿上了保安服，继续发光发热。" }
-                ]);
-            }
+    // ==================== DOM元素 ====================
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const endScreen = document.getElementById("endScreen");
+    const eventModal = document.getElementById("eventModal");
+    const healthModal = document.getElementById("healthModal");
+    const achievementModal = document.getElementById("achievementModal");
+    const bgMusic = document.getElementById("bgMusic");
+    let musicPlaying = false;
 
-            // ================= 动态随机事件引擎 =================
-            rollEvent() {
-                // 1. 尝试触发职业专属事件 (20%概率)
-                if (Math.random() < 0.25 && this.career !== "待业" && this.career !== "进厂打螺丝") {
-                    this.triggerCareerEvent();
-                    return;
-                }
+    // ==================== 游戏核心函数 ====================
+    // 初始化游戏
+    function initGame() {
+      gameData = {
+        age: 0,
+        stage: "婴儿期",
+        career: "婴儿",
+        partner: "无",
+        isMarried: false,
+        attributes: {
+          intelligence: Math.floor(Math.random() * 20) + 40,
+          physique: Math.floor(Math.random() * 20) + 40,
+          charm: Math.floor(Math.random() * 20) + 40,
+          money: Math.floor(Math.random() * 20) + 40,
+          happiness: Math.floor(Math.random() * 20) + 40,
+          luck: Math.floor(Math.random() * 20) + 40
+        },
+        memory: ["📌 你降临到这个世界，开启了全新的人生"],
+        achievements: JSON.parse(localStorage.getItem("lifeAchievements")) || [],
+        usedEvents: [],
+        isGameOver: false
+      };
+      updateUI();
+      triggerEvent();
+      checkAchievements();
+    }
 
-                // 2. 普通随机遭遇事件组合器 (绝不重复)
-                const subjects = {
-                    "幼儿期": ["一只流浪猫", "隔壁的熊孩子", "严厉的奶奶"],
-                    "儿童期": ["班主任", "同桌", "学校的小霸王", "父母"],
-                    "青春期": ["初恋暗恋对象", "教导主任", "网吧老板", "隔壁班的校花/校草"],
-                    "青年期": ["房东", "你的相亲对象", "直属领导", "多年不见的老同学"],
-                    "中年期": ["叛逆期的孩子", "体检医生", "理财顾问", "下属"],
-                    "晚年期": ["推销保健品的骗子", "公园下棋的王大爷", "隔壁床的病友", "你的孙子"]
-                };
-                
-                const actions = {
-                    "good": [
-                        { txt: "给你送了一份意想不到的礼物", e: {hap:2, cha:1} },
-                        { txt: "向你请教了一个复杂的问题，你完美解答", e: {int:2, hap:1} },
-                        { txt: "拉着你去跑了五公里，你感觉神清气爽", e: {phy:3, hap:1} }
-                    ],
-                    "bad": [
-                        { txt: "无缘无故把你臭骂了一顿", e: {hap:-3} },
-                        { txt: "借了你一笔钱，然后消失了", e: {wea:-5, hap:-2} },
-                        { txt: "传染了重感冒给你，你在床上躺了一周", e: {phy:-5, hap:-2} }
-                    ]
-                };
+    // 更新UI界面
+    function updateUI() {
+      document.getElementById("age").textContent = `${gameData.age}岁`;
+      document.getElementById("career").textContent = gameData.career;
+      document.getElementById("partner").textContent = gameData.partner;
+      document.getElementById("wealthShow").textContent = `¥${gameData.attributes.money * 1000}`;
+      document.getElementById("stage").textContent = gameData.stage;
 
-                let subList = subjects[this.stage] || ["一个路人"];
-                let sub = subList[Math.floor(Math.random() * subList.length)];
-                
-                let isGood = Math.random() > 0.5;
-                let actObj = actions[isGood ? "good" : "bad"][Math.floor(Math.random() * 3)];
-                
-                for(let k in actObj.e) this.attrs[k] += actObj.e[k];
-                
-                let moneyStr = actObj.e.wea ? `(财富${actObj.e.wea})` : "";
-                let phyStr = actObj.e.phy ? `(体质${actObj.e.phy>0?'+':''}${actObj.e.phy})` : "";
-                
-                this.log(`${sub}${actObj.txt}。 ${moneyStr} ${phyStr}`);
-                this.checkState();
-                this.updateUI();
-            }
+      // 更新属性条
+      document.getElementById("intelligence").textContent = gameData.attributes.intelligence;
+      document.getElementById("intelligenceBar").style.width = `${gameData.attributes.intelligence}%`;
+      document.getElementById("physique").textContent = gameData.attributes.physique;
+      document.getElementById("physiqueBar").style.width = `${gameData.attributes.physique}%`;
+      document.getElementById("charm").textContent = gameData.attributes.charm;
+      document.getElementById("charmBar").style.width = `${gameData.attributes.charm}%`;
+      document.getElementById("money").textContent = gameData.attributes.money;
+      document.getElementById("moneyBar").style.width = `${gameData.attributes.money}%`;
+      document.getElementById("happiness").textContent = gameData.attributes.happiness;
+      document.getElementById("happinessBar").style.width = `${gameData.attributes.happiness}%`;
+      document.getElementById("luck").textContent = gameData.attributes.luck;
+      document.getElementById("luckBar").style.width = `${gameData.attributes.luck}%`;
 
-            triggerCareerEvent() {
-                let text = "";
-                if (this.career === "大厂程序员") {
-                    let r = Math.random();
-                    if(r < 0.3) { text = "公司服务器深夜宕机，你连夜排查，保住了年终奖，但掉了大把头发。(财富+10, 体质-5)"; this.cash+=10; this.attrs.phy-=5; }
-                    else { text = "你负责的模块上线大成功！你获得了期权奖励。(财富+30)"; this.cash+=30; }
-                } else if (this.career === "三甲医生") {
-                    if(Math.random() < 0.5) { text = "你连续做了14个小时的手术，把病人从死神手里抢了回来。(幸福+10, 体质-8)"; this.attrs.hap+=10; this.attrs.phy-=8; }
-                    else { text = "医患关系紧张，你无端遭到家属投诉，心灰意冷。(幸福-10)"; this.attrs.hap-=10; }
-                } else if (this.career === "体制内科员") {
-                    text = "局里年终大评比，你因为写的一手好材料被领导公开表扬。(魅力+3, 幸福+3)"; this.attrs.cha+=3; this.attrs.hap+=3;
-                } else if (this.career === "灰产黑客") {
-                    let r = Math.random();
-                    if(r < 0.4) { text = "<span class='hl-red'>警方的净网行动查到了你的某个IP跳板！你连夜销毁硬盘，惊出一身冷汗。</span>(幸福-15, 财富-20)"; this.attrs.hap-=15; this.cash-=20; }
-                    else { text = "你成功勒索了一家海外博彩公司，<span class='hl-gold'>狂揽巨额比特币！</span>(财富+80)"; this.cash+=80; }
-                }
+      // 更新回忆录
+      const memoryList = document.getElementById("memoryList");
+      memoryList.innerHTML = "";
+      gameData.memory.forEach(item => {
+        const p = document.createElement("p");
+        p.textContent = item;
+        memoryList.appendChild(p);
+      });
+      memoryList.scrollTop = memoryList.scrollHeight;
+    }
 
-                if(text) this.log(`【工作】${text}`);
-                this.checkState();
-                this.updateUI();
-            }
+    // 获取当前年龄段索引
+    function getStageIndex() {
+      if (gameData.age <= 3) return 0;
+      if (gameData.age <= 12) return 1;
+      if (gameData.age <= 17) return 2;
+      if (gameData.age <= 21) return 3;
+      if (gameData.age <= 60) return 4;
+      return 5;
+    }
+
+    // 随机触发事件（无重复）
+    function triggerEvent() {
+      if (gameData.isGameOver) return;
+      const stageIdx = getStageIndex();
+      const events = eventLibrary[stageIdx].filter(e => !gameData.usedEvents.includes(e.id));
+      
+      if (events.length === 0) {
+        gameData.usedEvents = [];
+        triggerEvent();
+        return;
+      }
+
+      // 随机选择事件
+      const randomEvent = events[Math.floor(Math.random() * events.length)];
+      gameData.usedEvents.push(randomEvent.id);
+
+      // 体质检查
+      checkPhysique();
+
+      // 渲染事件
+      if (randomEvent.type === "special") {
+        renderModalEvent(randomEvent);
+      } else {
+        renderNormalEvent(randomEvent);
+      }
+    }
+
+    // 渲染普通事件
+    function renderNormalEvent(event) {
+      document.getElementById("eventTitle").textContent = event.title;
+      document.getElementById("eventDesc").textContent = event.desc;
+      const choicesBox = document.getElementById("choicesBox");
+      choicesBox.innerHTML = "";
+
+      event.choices.forEach((choice, index) => {
+        // 检查属性条件
+        if (choice.condition && !checkCondition(choice.condition)) return;
+        
+        const btn = document.createElement("button");
+        btn.className = "bg-darklight border border-gray-700 rounded-xl p-4 card-hover text-left";
+        btn.innerHTML = `
+          <span class="font-bold text-lg">${choice.text}</span>
+          <p class="text-gray-400 text-sm mt-1">${getEffectText(choice.effect)}</p>
+        `;
+        btn.onclick = () => makeChoice(choice, event);
+        choicesBox.appendChild(btn);
+      });
+    }
+
+    // 渲染弹窗事件
+    function renderModalEvent(event) {
+      document.getElementById("modalTitle").textContent = event.title;
+      document.getElementById("modalDesc").textContent = event.desc;
+      const modalChoices = document.getElementById("modalChoices");
+      modalChoices.innerHTML = "";
+
+      event.choices.forEach(choice => {
+        if (choice.condition && !checkCondition(choice.condition)) return;
+        
+        const btn = document.createElement("button");
+        btn.className = "bg-primary/20 border border-primary/50 rounded-xl p-3 card-hover text-white font-bold";
+        btn.textContent = choice.text;
+        btn.onclick = () => {
+          makeChoice(choice, event);
+          eventModal.classList.add("hidden");
+        };
+        modalChoices.appendChild(btn);
+      });
+
+      eventModal.classList.remove("hidden");
+      eventModal.classList.add("flex");
+    }
+
+    // 做出选择
+    function makeChoice(choice, event) {
+      // 应用属性效果
+      applyEffect(choice.effect);
+      
+      // 添加回忆录
+      gameData.memory.push(`📌 ${gameData.age}岁：${choice.memo}`);
+      
+      // 设置职业
+      if (choice.career) gameData.career = choice.career;
+      
+      // 设置婚姻
+      if (choice.marry) {
+        gameData.isMarried = true;
+        gameData.partner = "已婚";
+      }
+
+      // 年龄增长
+      gameData.age += Math.floor(Math.random() * 2) + 1;
+      
+      // 更新人生阶段
+      updateStage();
+      
+      // 检查成就
+      checkAchievements();
+      
+      // 更新UI
+      updateUI();
+      
+      // 触发下一个事件
+      setTimeout(() => triggerEvent(), 800);
+    }
+
+    // 应用属性效果
+    function applyEffect(effect) {
+      for (const key in effect) {
+        if (Array.isArray(effect[key])) {
+          // 随机效果（风险/机遇）
+          const min = effect[key][0];
+          const max = effect[key][1];
+          const value = Math.floor(Math.random() * (max - min + 1)) + min;
+          gameData.attributes[key] = Math.max(0, Math.min(100, gameData.attributes[key] + value));
+        } else {
+          gameData.attributes[key] = Math.max(0, Math.min(100, gameData.attributes[key] + effect[key]));
         }
+      }
+    }
 
-        const game = new LifeSimulator();
-        game.updateUI();
-    </script>
+    // 检查属性条件
+    function checkCondition(condition) {
+      for (const key in condition) {
+        if (gameData.attributes[key] < condition[key]) return false;
+      }
+      return true;
+    }
+
+    // 获取效果文本
+    function getEffectText(effect) {
+      const texts = [];
+      const names = { intelligence: "智力", physique: "体质", charm: "魅力", money: "财富", happiness: "幸福", luck: "幸运" };
+      for (const key in effect) {
+        const val = Array.isArray(effect[key]) ? `${effect[key][0]}~${effect[key][1]}` : effect[key];
+        texts.push(`${names[key]}${val > 0 ? "+" : ""}${val}`);
+      }
+      return texts.join(" · ");
+    }
+
+    // 更新人生阶段
+    function updateStage() {
+      if (gameData.age <= 3) gameData.stage = "婴儿期";
+      else if (gameData.age <= 12) gameData.stage = "童年期";
+      else if (gameData.age <= 17) gameData.stage = "少年期";
+      else if (gameData.age <= 21) gameData.stage = "大学期";
+      else if (gameData.age <= 60) gameData.stage = "成年期";
+      else gameData.stage = "老年期";
+
+      // 寿命上限
+      if (gameData.age >= 100) endGame();
+    }
+
+    // 检查体质
+    function checkPhysique() {
+      if (gameData.attributes.physique <= 1) {
+        healthModal.classList.remove("hidden");
+        healthModal.classList.add("flex");
+        document.getElementById("healthDesc").textContent = 
+          gameData.age < 18 ? "你的体质濒临崩溃，爸妈强制带你养病！" :
+          gameData.age < 60 ? "你的体质耗尽，必须选择养病或落幕！" :
+          "年事已高，体质耗尽，人生即将落幕！";
+      }
+    }
+
+    // 养病选择
+    function healLife() {
+      gameData.attributes.physique = 30;
+      gameData.memory.push(`📌 ${gameData.age}岁：你选择抛下一切养病，重获新生`);
+      healthModal.classList.add("hidden");
+      updateUI();
+      triggerEvent();
+    }
+
+    // 提前结束人生
+    function endLifeEarly() {
+      gameData.isGameOver = true;
+      healthModal.classList.add("hidden");
+      endGame();
+    }
+
+    // 检查成就
+    function checkAchievements() {
+      achievementList.forEach(ach => {
+        if (!gameData.achievements.some(a => a.id === ach.id) && ach.condition()) {
+          gameData.achievements.push(ach);
+          // 本地存储成就
+          localStorage.setItem("lifeAchievements", JSON.stringify(gameData.achievements));
+        }
+      });
+    }
+
+    // 游戏结束
+    function endGame() {
+      gameData.isGameOver = true;
+      const endTitle = document.getElementById("endTitle");
+      const endDesc = document.getElementById("endDesc");
+      
+      // 判定结局
+      const isLegend = Object.values(gameData.attributes).every(v => v >= 80);
+      const isNormal = gameData.age >= 60 && Object.values(gameData.attributes).every(v => v < 80);
+      const isEarly = gameData.age < 30;
+      const isIsland = gameData.memory.some(m => m.includes("海岛隐居"));
+      const isGray = gameData.career === "黑社会" || gameData.career === "黑市商人";
+
+      if (isLegend) {
+        endTitle.textContent = "传奇人生";
+        endDesc.textContent = "你拥有完美的一生，成为世人敬仰的传奇！";
+      } else if (isNormal) {
+        endTitle.textContent = "平凡人生";
+        endDesc.textContent = "平淡安稳的一生，幸福才是人生真谛！";
+      } else if (isEarly) {
+        endTitle.textContent = "英年早逝";
+        endDesc.textContent = "生命短暂，留下无尽的遗憾...";
+      } else if (isIsland) {
+        endTitle.textContent = "海岛隐居";
+        endDesc.textContent = "你抛下一切，在无人海岛度过余生，自由且安宁！";
+      } else if (isGray) {
+        endTitle.textContent = "灰色人生";
+        endDesc.textContent = "游走在法律边缘，一生提心吊胆！";
+      } else {
+        endTitle.textContent = "人生落幕";
+        endDesc.textContent = "你的一生结束了，酸甜苦辣，皆是人生！";
+      }
+
+      // 填充结局数据
+      document.getElementById("endAge").textContent = `${gameData.age}岁`;
+      document.getElementById("endCareer").textContent = gameData.career;
+      document.getElementById("endWealth").textContent = `¥${gameData.attributes.money * 1000}`;
+      
+      // 填充回忆录
+      const endMemory = document.getElementById("endMemory");
+      endMemory.innerHTML = "";
+      gameData.memory.forEach(item => {
+        const p = document.createElement("p");
+        p.textContent = item;
+        endMemory.appendChild(p);
+      });
+
+      // 填充成就
+      const endAchievement = document.getElementById("endAchievement");
+      endAchievement.innerHTML = "";
+      gameData.achievements.forEach(ach => {
+        const div = document.createElement("div");
+        div.className = "bg-darklight p-3 rounded-lg border border-primary/30 text-center";
+        div.innerHTML = `<p class="font-bold text-primary">${ach.name}</p><p class="text-xs text-gray-400">${ach.desc}</p>`;
+        endAchievement.appendChild(div);
+      });
+
+      // 显示结局页面
+      gameScreen.classList.add("hidden");
+      endScreen.classList.remove("hidden");
+    }
+
+    // 重启游戏
+    function restartGame() {
+      endScreen.classList.add("hidden");
+      initGame();
+      gameScreen.classList.remove("hidden");
+    }
+
+    // ==================== 交互事件 ====================
+    // 开始游戏
+    document.getElementById("startGameBtn").onclick = () => {
+      startScreen.classList.add("hidden");
+      initGame();
+      gameScreen.classList.remove("hidden");
+    };
+
+    // 音乐控制
+    document.getElementById("musicBtn").onclick = () => {
+      if (musicPlaying) {
+        bgMusic.pause();
+        document.getElementById("musicBtn").classList.remove("text-primary");
+      } else {
+        bgMusic.play();
+        document.getElementById("musicBtn").classList.add("text-primary");
+      }
+      musicPlaying = !musicPlaying;
+    };
+
+    // 成就弹窗
+    document.getElementById("achievementBtn").onclick = () => {
+      const achievementListEl = document.getElementById("achievementList");
+      achievementListEl.innerHTML = "";
+      const savedAch = JSON.parse(localStorage.getItem("lifeAchievements")) || [];
+      
+      if (savedAch.length === 0) {
+        achievementListEl.innerHTML = "<p class='col-span-2 text-center text-gray-500'>暂无成就，开启人生解锁吧！</p>";
+      } else {
+        savedAch.forEach(ach => {
+          const div = document.createElement("div");
+          div.className = "bg-darklight p-3 rounded-lg border border-primary/30 text-center";
+          div.innerHTML = `<p class="font-bold text-primary">${ach.name}</p><p class="text-xs text-gray-400">${ach.desc}</p>`;
+          achievementListEl.appendChild(div);
+        });
+      }
+      achievementModal.classList.remove("hidden");
+      achievementModal.classList.add("flex");
+    };
+
+    // 关闭成就弹窗
+    document.getElementById("closeAchievement").onclick = () => {
+      achievementModal.classList.add("hidden");
+    };
+    document.getElementById("modalOverlay").onclick = () => {
+      achievementModal.classList.add("hidden");
+    };
+  </script>
 </body>
 </html>
