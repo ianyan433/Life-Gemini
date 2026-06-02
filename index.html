@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>浮生录 - 无尽人生模拟器 V4 终极版</title>
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --bg-panel: #18181b;
+            --bg-card: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --grey-ind: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; user-select: none; }
+        body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+
+        /* 界面布局 */
+        .app-container { width: 100%; max-width: 1200px; height: 100vh; display: flex; flex-direction: row; background: var(--bg-dark); box-shadow: 0 0 50px rgba(0,0,0,0.8); position: relative; }
+        @media (max-width: 800px) { .app-container { flex-direction: column; overflow-y: auto; height: 100vh; } }
+
+        /* 启动屏 & 成就屏 */
+        .overlay-screen { position: absolute; inset: 0; background: linear-gradient(135deg, #09090b 0%, #18181b 100%); z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; transition: opacity 0.5s; }
+        .title-glitch { font-size: 4rem; font-weight: 900; background: linear-gradient(to right, #fff, #a1a1aa); -webkit-background-clip: text; color: transparent; margin-bottom: 10px; letter-spacing: 6px; text-align: center;}
+        .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem; text-align: center;}
+        .menu-btn { background: var(--accent); color: white; border: none; padding: 16px 45px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; transition: all 0.3s; margin: 10px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+        .menu-btn:hover { background: var(--accent-hover); transform: translateY(-3px); }
+        .menu-btn.alt { background: var(--bg-card); border: 1px solid #3f3f46; box-shadow: none; }
+        .menu-btn.alt:hover { background: #3f3f46; color: white; }
+
+        /* 左侧状态栏 */
+        .sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid #27272a; padding: 25px; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; z-index: 10; }
+        @media (max-width: 800px) { .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #27272a; height: 45vh; } }
+        
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #27272a; padding-bottom: 15px; }
+        .age-display { font-size: 2.8rem; font-weight: bold; color: var(--accent); line-height: 1; }
+        .stage-display { font-size: 1.1rem; color: var(--text-muted); margin-top: 5px; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
+        .info-box { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem; border: 1px solid #27272a; }
+        .info-box span { display: block; color: var(--text-muted); margin-bottom: 4px; font-size: 0.75rem; }
+        .info-box strong { color: #fff; font-size: 1rem; }
+
+        .attr-container { display: flex; flex-direction: column; gap: 14px; }
+        .attr-row { display: flex; flex-direction: column; gap: 6px; }
+        .attr-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; }
+        .attr-bar-bg { width: 100%; height: 8px; background: #27272a; border-radius: 4px; overflow: hidden; }
+        .attr-bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* 颜色区分 */
+        .fill-int { background: #3b82f6; } .fill-phy { background: #10b981; } .fill-cha { background: #ec4899; }
+        .fill-wea { background: #f59e0b; } .fill-hap { background: #8b5cf6; } .fill-luc { background: #14b8a6; }
+
+        /* 右侧主交互区 */
+        .main-area { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-dark); position: relative; height: 100%; }
+        
+        .log-window { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+        @media (max-width: 800px) { .log-window { padding: 15px; height: 25vh; flex-grow: 0; } }
+        
+        .log-item { background: var(--bg-panel); border-left: 4px solid #3f3f46; padding: 14px 18px; border-radius: 0 8px 8px 0; font-size: 0.95rem; line-height: 1.6; animation: slideInRight 0.3s ease forwards; opacity: 0; transform: translateX(20px); }
+        .log-item.special { border-left-color: var(--accent); background: rgba(59, 130, 246, 0.08); font-weight: bold; }
+        .log-item.danger { border-left-color: var(--danger); background: rgba(239, 68, 68, 0.08); }
+        .log-item.warning { border-left-color: var(--warning); background: rgba(245, 158, 11, 0.08); }
+        .log-item.grey { border-left-color: var(--grey-ind); background: rgba(139, 92, 246, 0.08); }
+        
+        /* 日常选项区 (底部) - 支持滚动，容纳海量选项 */
+        .choices-panel { padding: 20px 25px; background: var(--bg-panel); border-top: 1px solid #27272a; display: flex; flex-direction: column; gap: 10px; max-height: 45vh; overflow-y: auto; }
+        @media (max-width: 800px) { .choices-panel { max-height: 30vh; } }
+
+        .choice-btn { background: var(--bg-card); border: 1px solid #3f3f46; color: var(--text-main); padding: 15px; border-radius: 10px; font-size: 0.95rem; text-align: left; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
+        .choice-btn:hover:not(:disabled) { background: #3f3f46; border-color: var(--text-muted); transform: translateX(5px); }
+        .choice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .choice-req { font-size: 0.8rem; color: var(--danger); font-weight: normal; }
+
+        /* 弹窗系统 (特殊事件/人生转折) */
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; opacity: 0; transition: opacity 0.3s; }
+        .modal-box { background: var(--bg-panel); border: 1px solid #3f3f46; padding: 35px; border-radius: 20px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); transform: scale(0.95); transition: transform 0.3s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-title { font-size: 1.8rem; margin-bottom: 15px; color: #fff; text-align: center; }
+        .modal-desc { font-size: 1.05rem; color: #d4d4d8; line-height: 1.7; margin-bottom: 25px; text-align: center; }
+        
+        /* 成就展示区 */
+        .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; max-height: 60vh; overflow-y: auto; margin: 20px 0; padding: 10px; width: 100%; max-width: 900px; }
+        .ach-card { background: var(--bg-panel); border: 1px solid #3f3f46; padding: 15px; border-radius: 12px; text-align: center; opacity: 0.4; filter: grayscale(1); transition: all 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 140px;}
+        .ach-card.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--warning); background: rgba(245, 158, 11, 0.1); box-shadow: 0 4px 15px rgba(245,158,11,0.2); }
+        .ach-icon { font-size: 2.2rem; margin-bottom: 8px; }
+        .ach-name { font-weight: bold; font-size: 1rem; color: #fff; }
+        .ach-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+
+        /* 悬浮控件 */
+        .float-controls { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; z-index: 30; }
+        .icon-btn { background: var(--bg-panel); border: 1px solid #3f3f46; color: white; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; font-size: 1.2rem;}
+        .icon-btn:hover { background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+        .hidden { display: none !important; }
+        @keyframes slideInRight { to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="startScreen" class="overlay-screen">
+        <h1 class="title-glitch">浮生录 <span style="font-size: 1rem; color: var(--accent); vertical-align: top;">V4</span></h1>
+        <p class="subtitle">无尽的平行宇宙，你只能在其中活一次。</p>
+        <button class="menu-btn" onclick="game.startNewLife()">投胎入世</button>
+        <button class="menu-btn alt" onclick="ui.showAchievements()">灵魂成就馆</button>
+    </div>
+
+    <div id="achScreen" class="overlay-screen hidden">
+        <h2 style="font-size: 2.2rem; margin-bottom: 5px;">轮回成就馆</h2>
+        <p style="color: var(--text-muted);">你在无尽轮回中刻下的灵魂印记</p>
+        <div class="achievements-grid" id="achGrid"></div>
+        <button class="menu-btn alt" onclick="ui.hideAchievements()">返回主界面</button>
+    </div>
+
+    <div class="app-container hidden" id="gameUI">
+        <div class="float-controls">
+            <button class="icon-btn" id="musicBtn" onclick="audio.toggle()" title="开启/关闭环境音">🔇</button>
+        </div>
+
+        <div class="sidebar">
+            <div class="profile-header">
+                <div>
+                    <div class="age-display"><span id="ui-age">0</span> 岁</div>
+                    <div class="stage-display" id="ui-stage">婴儿期</div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box"><span>当前学历</span><strong id="ui-edu">文盲</strong></div>
+                <div class="info-box"><span>当前职业</span><strong id="ui-career">无</strong></div>
+                <div class="info-box"><span>情感状态</span><strong id="ui-partner">单身</strong></div>
+                <div class="info-box"><span>流动资产</span><strong id="ui-wealth" style="color:var(--warning)">0 万</strong></div>
+            </div>
+
+            <div class="attr-container">
+                <div class="attr-row"><div class="attr-header"><span>🧠 智力</span><span id="v-int">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-int" id="b-int"></div></div></div>
+                <div class="attr-row"><div class="attr-header"><span>💪 体质 (红线警告)</span><span id="v-phy">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-phy" id="b-phy"></div></div></div>
+                <div class="attr-row"><div class="attr-header"><span>✨ 魅力</span><span id="v-cha">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-cha" id="b-cha"></div></div></div>
+                <div class="attr-row"><div class="attr-header"><span>💰 财商</span><span id="v-wea">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-wea" id="b-wea"></div></div></div>
+                <div class="attr-row"><div class="attr-header"><span>🍀 幸福</span><span id="v-hap">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-hap" id="b-hap"></div></div></div>
+                <div class="attr-row"><div class="attr-header"><span>🎲 幸运 (隐藏)</span><span id="v-luc">0</span></div><div class="attr-bar-bg"><div class="attr-bar-fill fill-luc" id="b-luc"></div></div></div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="log-window" id="logBox"></div>
+            <div class="choices-panel" id="choiceBox"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="specialModal">
+        <div class="modal-box">
+            <h2 class="modal-title" id="modalTitle">命运转折</h2>
+            <p class="modal-desc" id="modalDesc">描述...</p>
+            <div class="choices-panel" style="padding:0; border:none; background:transparent; max-height:none; overflow:visible;" id="modalChoices">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 扩展成就库 (21个) =================
+        const ACH_DATA = {
+            "提线木偶": { icon: "🍼", desc: "童年时期完全听从父母安排，失去自我。" },
+            "混世魔王": { icon: "😈", desc: "自小叛逆，掀翻规则。" },
+            "天之骄子": { icon: "🎓", desc: "成功考入顶尖985学府。" },
+            "辍学青年": { icon: "🚬", desc: "放弃学业，早早混迹社会。" },
+            "艺术泰斗": { icon: "🎨", desc: "在艺术领域达到巅峰。" },
+            "格子衫狂魔": { icon: "💻", desc: "成为大厂程序员并疯狂爆肝。" },
+            "仁心圣手": { icon: "⚕️", desc: "成为名医，救死扶伤。" },
+            "黑道教父": { icon: "🕶️", desc: "在灰色产业中爬到权力顶端。" },
+            "铁窗泪": { icon: "⛓️", desc: "因非法活动锒铛入狱。" },
+            "倾家荡产": { icon: "📉", desc: "经历破产危机，资产清零。" },
+            "天降横财": { icon: "🎰", desc: "凭借极高幸运中大奖或暴富。" },
+            "孤岛隐士": { icon: "🏝️", desc: "生命垂危时放弃一切，归隐荒野。" },
+            "绝处逢生": { icon: "❤️‍🩹", desc: "在绝症危机中依靠昂贵治疗活下来。" },
+            "海王情圣": { icon: "🌹", desc: "在感情中游刃有余（频繁更换伴侣）。" },
+            "大彻大悟": { icon: "📿", desc: "在绝望危机中选择剃度出家。" },
+            "富可敌国": { icon: "💎", desc: "生前流动资产突破 1000 万。" },
+            "环游世界": { icon: "✈️", desc: "在中晚年抛下束缚去环游世界。" },
+            "桃李满天下": { icon: "📚", desc: "作为人民教师度过一生。" },
+            "平平淡淡": { icon: "🍵", desc: "做着普通工作，安稳度过一生。" },
+            "英年早逝": { icon: "🪦", desc: "在 35 岁之前因体质耗尽离世。" },
+            "福寿双全": { icon: "🌅", desc: "活过 80 岁且无疾而终。" }
+        };
+
+        // ================= 核心游戏引擎 =================
+        class Engine {
+            constructor() {
+                this.loadAchievements();
+                this.reset();
+            }
+
+            reset() {
+                this.age = 0; this.isDead = false;
+                this.attrs = { int: 0, phy: 0, cha: 0, wea: 0, hap: 0, luc: 0 };
+                this.state = {
+                    edu: "未启蒙", career: "无", partner: "单身", cash: 0, stage: "婴儿期",
+                    flags: {}, // 命运标签
+                    usedEvents: new Set() // 去重机制
+                };
+            }
+
+            loadAchievements() {
+                try { this.achievements = JSON.parse(localStorage.getItem('life_achievements_v4')) || {}; } 
+                catch(e) { this.achievements = {}; }
+            }
+            saveAchievement(id) {
+                if(!this.achievements[id]) {
+                    this.achievements[id] = true;
+                    localStorage.setItem('life_achievements_v4', JSON.stringify(this.achievements));
+                    ui.log(`🏆 灵魂铭刻：解锁成就【${id}】`, "special");
+                }
+            }
+
+            startNewLife() {
+                this.reset();
+                // 初始投胎属性 (确保每局差异巨大)
+                this.attrs = {
+                    int: Math.floor(Math.random() * 50) + 10,
+                    phy: Math.floor(Math.random() * 40) + 30,
+                    cha: Math.floor(Math.random() * 50) + 10,
+                    wea: Math.floor(Math.random() * 40) + 5,
+                    hap: Math.floor(Math.random() * 40) + 40,
+                    luc: Math.floor(Math.random() * 90) + 5
+                };
+                
+                ui.switchScreen('game');
+                document.getElementById('logBox').innerHTML = '';
+                ui.log(`【0岁】 伴随着一阵啼哭，你来到了这个世界。<br>初始天资 -> 智力:${this.attrs.int} | 体质:${this.attrs.phy} | 魅力:${this.attrs.cha} | 财商:${this.attrs.wea}`, "special");
+                ui.update();
+                
+                this.generateYearOptions();
+            }
+
+            modAttr(changes) {
+                if(!changes) return;
+                ['int', 'phy', 'cha', 'wea', 'hap', 'luc'].forEach(k => {
+                    if(changes[k]) this.attrs[k] = Math.max(0, Math.min(100, this.attrs[k] + changes[k]));
+                });
+                if(changes.cash) this.state.cash += changes.cash;
+            }
+
+            advanceYear() {
+                if (this.isDead) return;
+                this.age++;
+                
+                // 1. 阶段判定
+                if (this.age < 3) this.state.stage = "婴儿期";
+                else if (this.age <= 12) this.state.stage = "童年期";
+                else if (this.age <= 17) this.state.stage = "青春期";
+                else if (this.age <= 22) this.state.stage = "大学/青涩期";
+                else if (this.age <= 35) this.state.stage = "青年期";
+                else if (this.age <= 55) this.state.stage = "中年期";
+                else this.state.stage = "晚年期";
+
+                // 2. 岁数与职业造成的体质/财富流失
+                let phyDrop = this.age > 45 ? 2 : (this.age > 60 ? 3 : 1);
+                if (this.state.career === "大厂程序员") { phyDrop += 4; this.state.cash += 35; }
+                else if (this.state.career === "三甲医生") { phyDrop += 3; this.state.cash += 25; }
+                else if (this.state.career === "底层马仔") { phyDrop += 5; this.state.cash += (Math.random()>0.5?60:5); }
+                else if (this.state.career === "黑道头目") { phyDrop += 3; this.state.cash += 150; }
+                else if (this.state.career === "人民教师") { phyDrop += 1; this.state.cash += 10; }
+                else if (this.state.career === "艺术家") { phyDrop += 1; this.state.cash += (Math.random()>0.7?50:2); }
+                else if (this.state.career === "隐士" || this.state.career === "出家人") { phyDrop = -2; this.attrs.hap += 2; }
+                else if (this.state.career !== "无" && this.state.career !== "囚犯") { this.state.cash += 8; }
+                
+                // 生活开销
+                if(this.age > 22 && this.state.career !== "隐士" && this.state.career !== "囚犯" && this.state.career !== "出家人") {
+                    this.state.cash -= (this.state.partner==="已婚" ? 5 : 2);
+                }
+                this.modAttr({phy: -phyDrop});
+
+                // 3. 拦截：体质濒危事件
+                if (this.attrs.phy <= 15 && !this.state.flags.healthCrisis) {
+                    this.state.flags.healthCrisis = true;
+                    return this.triggerHealthCrisis();
+                }
+
+                // 4. 拦截：破产危机事件
+                if (this.state.cash < -20 && !this.state.flags.bankruptCrisis) {
+                    this.state.flags.bankruptCrisis = true;
+                    return this.triggerBankruptcy();
+                }
+
+                // 5. 拦截：绝望抑郁危机
+                if (this.attrs.hap <= 10 && !this.state.flags.despairCrisis && this.age > 18) {
+                    this.state.flags.despairCrisis = true;
+                    return this.triggerDespair();
+                }
+
+                // 6. 死亡判定
+                if (this.attrs.phy <= 0) return this.triggerDeath("由于身体机能枯竭或过度劳累，你的心脏停止了跳动。");
+                if (this.age >= 80 && Math.random() < 0.15) return this.triggerDeath("你在睡梦中安详地闭上了眼睛。");
+                if (this.age > 95) return this.triggerDeath("你走到了人类寿命的极限。");
+
+                ui.update();
+
+                // 7. 强制年龄主线事件 (10个里程碑)
+                let milestone = MILESTONES.find(m => m.age === this.age);
+                if (milestone && (!milestone.req || milestone.req(this))) {
+                    ui.showModal(milestone.title, milestone.desc, milestone.choices);
+                    return;
+                }
+
+                // 8. 正常生成年度随机选项 (展现 5-8 个选项)
+                this.generateYearOptions();
+            }
+
+            generateYearOptions() {
+                let pool = EVENT_POOL.filter(e => 
+                    e.minAge <= this.age && e.maxAge >= this.age && 
+                    !this.state.usedEvents.has(e.id) && 
+                    (!e.req || e.req(this))
+                );
+
+                pool.sort(() => Math.random() - 0.5);
+                let choiceCount = Math.floor(Math.random() * 4) + 5; // 5 到 8 个选项
+                let options = pool.slice(0, choiceCount);
+                
+                if(options.length === 0) {
+                    options = [{ id: 'default', text: "平淡地度过了一年", log: "无事发生，平平淡淡才是真。", eff: { hap: 1, phy: 1 } }];
+                }
+
+                ui.renderChoices(options);
+            }
+
+            executeChoice(choice) {
+                if (choice.id !== 'default') this.state.usedEvents.add(choice.id);
+                if (choice.eff) this.modAttr(choice.eff);
+                if (choice.setFlag) for(let k in choice.setFlag) this.state.flags[k] = choice.setFlag[k];
+                if (choice.stateChange) {
+                    if (choice.stateChange.edu) this.state.edu = choice.stateChange.edu;
+                    if (choice.stateChange.career) this.state.career = choice.stateChange.career;
+                    if (choice.stateChange.partner) this.state.partner = choice.stateChange.partner;
+                }
+                
+                let cssClass = choice.type || "";
+                ui.log(`【${this.age}岁】 ${choice.log || choice.text}`, cssClass);
+                this.advanceYear();
+            }
+
+            // ================= 三大突发危机 =================
+            triggerHealthCrisis() {
+                ui.showModal("🚨 命悬一线 (体质危急)", "医生拿着体检报告脸色凝重。你的身体已经到了崩溃边缘，继续劳作活不过明年。你必须抉择：", [
+                    { text: "抛下一切去无名海岛隐居 (需资产>30万)", req: () => this.state.cash >= 30, action: () => {
+                        this.state.career = "隐士"; this.state.partner = "离去"; this.state.cash -= 30;
+                        this.modAttr({phy: 40, hap: 20, wea: -30}); this.state.flags.islandHermit = true; this.saveAchievement("孤岛隐士");
+                        ui.log(`【${this.age}岁】 你斩断所有社会关系，逃离到海岛。海风吹拂，身体奇迹般好转。`, "special"); this.advanceYear();
+                    }},
+                    { text: "砸重金吃进口靶向药强行续命 (需资产>100万)", req: () => this.state.cash >= 100, action: () => {
+                        this.state.cash -= 100; this.modAttr({phy: 35}); this.saveAchievement("绝处逢生");
+                        ui.log(`【${this.age}岁】 昂贵的药物把你从鬼门关拉了回来，但积蓄遭受重创。`, "warning"); this.advanceYear();
+                    }},
+                    { text: "放弃治疗，去完成最后的疯狂 (降智力/升魅力)", action: () => {
+                        this.modAttr({phy: -10, cha: 30, int: -30});
+                        ui.log(`【${this.age}岁】 你撕碎报告，决定用最后的生命狂欢！`, "danger"); this.advanceYear();
+                    }},
+                    { text: "生死有命，继续死磕当前生活！", action: () => {
+                        this.modAttr({phy: -10}); ui.log(`【${this.age}岁】 你咬牙走出了医院，假装一切正常。`, "danger"); this.advanceYear();
+                    }}
+                ]);
+            }
+
+            triggerBankruptcy() {
+                this.saveAchievement("倾家荡产");
+                ui.showModal("📉 破产深渊", "高额的负债压垮了你，催收人员堵在门外，你的资产变成了负数。你必须想办法生存：", [
+                    { text: "放下尊严，去工地搬砖还债", action: () => {
+                        this.state.career = "苦力"; this.modAttr({phy: -15, hap: -20}); this.state.cash += 20;
+                        ui.log(`【${this.age}岁】 你戴上安全帽，在烈日下用血汗偿还债务。`, "warning"); this.advanceYear();
+                    }},
+                    { text: "走投无路，加入黑社会捞偏门 (高风险)", action: () => {
+                        this.state.career = "底层马仔"; this.modAttr({hap: -30}); this.state.flags.rebel = true;
+                        ui.log(`【${this.age}岁】 债务逼你走入暗巷，你接过了黑帮老大递来的刀。`, "grey"); this.advanceYear();
+                    }},
+                    { text: "求助父母亲戚 (需魅力>50)", req: () => this.attrs.cha > 50, action: () => {
+                        this.state.cash = 0; this.modAttr({cha: -20, hap: -10});
+                        ui.log(`【${this.age}岁】 亲戚们凑钱帮你填平了债务，但你看尽了冷眼。`, "warning"); this.advanceYear();
+                    }}
+                ]);
+            }
+
+            triggerDespair() {
+                ui.showModal("🕳️ 灵魂暗夜", "生活长期的压抑让你精神濒临崩溃。你觉得人生毫无意义，站在天台上：", [
+                    { text: "看破红尘，遁入空门", action: () => {
+                        this.state.career = "出家人"; this.state.partner = "单身"; this.state.cash = 0; this.modAttr({hap: 50, int: 20}); this.saveAchievement("大彻大悟");
+                        ui.log(`【${this.age}岁】 伴随晨钟暮鼓，你剃除烦恼丝，从此常伴青灯古佛。`, "special"); this.advanceYear();
+                    }},
+                    { text: "看心理医生积极治疗 (需资产>10)", req: () => this.state.cash >= 10, action: () => {
+                        this.state.cash -= 10; this.modAttr({hap: 30});
+                        ui.log(`【${this.age}岁】 心理干预让你慢慢找回了对生活的希望。`, "warning"); this.advanceYear();
+                    }},
+                    { text: "彻底放纵自我，夜夜买醉", action: () => {
+                        this.modAttr({phy: -20, cha: -10, hap: 10});
+                        ui.log(`【${this.age}岁】 你在酒精和麻醉中逃避现实，身体严重受损。`, "danger"); this.advanceYear();
+                    }}
+                ]);
+            }
+
+            triggerDeath(reason) {
+                this.isDead = true; ui.update();
+                
+                if (this.age < 35) this.saveAchievement("英年早逝");
+                if (this.age >= 80) this.saveAchievement("福寿双全");
+                if (this.state.cash >= 1000) this.saveAchievement("富可敌国");
+                
+                let ending = "【无名之辈】你的灵魂汇入了无尽的河流，没留下太多涟漪。";
+                if (this.state.flags.islandHermit) ending = "【归园田居】你在岛上看着落日闭上了眼，内心无比平静。";
+                else if (this.state.career === "出家人") ending = "【涅槃寂静】你含笑坐化，留下一段禅林佳话。";
+                else if (this.state.career === "黑道头目" || this.state.career === "底层马仔") ending = "【喋血街头】你倒在了阴暗的巷子里，结束了罪恶的一生。";
+                else if (this.state.career === "囚犯") ending = "【铁窗悲歌】你在冰冷的铁窗内度过了余生。";
+                else if (this.state.career === "三甲医生") ending = "【国手仁心】你的葬礼上，无数患者自发来为你送行。";
+                else if (this.state.career === "人民教师") ending = "【桃李天下】你的学生们从世界各地赶来吊唁。";
+                else if (this.state.career === "普通职员") ending = "【平凡之路】你度过了平凡但真实的一生。";
+
+                ui.showModal("💀 终局记录", `${reason}<br><br><span style="color:var(--accent)">终局评价：${ending}</span><br>最终资产: ${this.state.cash}万`, [
+                    { text: "重新投胎", action: () => { ui.switchScreen('start'); } }
+                ]);
+            }
+        }
+
+        // ================= 数据库：十大贯穿人生的强制转折点 =================
+        const MILESTONES = [
+            { age: 3, title: "3岁：认知启蒙", desc: "你上幼儿园了，面对陌生的环境和抢你玩具的小孩，你决定：", choices: [
+                { text: "放声大哭，找老师抱抱", action: () => { game.modAttr({cha: 5, int: -2}); ui.log("你很招大人喜欢，性格偏向依赖。"); game.advanceYear(); }},
+                { text: "一拳把抢玩具的小孩打哭", action: () => { game.modAttr({phy: 10, cha: -5}); game.state.flags.rebel=true; ui.log("你成了幼儿园小霸王。", "warning"); game.advanceYear(); }},
+                { text: "默默观察，偷偷把玩具拿回来", action: () => { game.modAttr({int: 10}); ui.log("你展现出了超乎常人的沉稳和智商。"); game.advanceYear(); }}
+            ]},
+            { age: 6, title: "6岁：童年分叉口", desc: "父母逼你吃最讨厌的苦瓜，并给你报了三个补习班：", choices: [
+                { text: "乖乖吃掉，完全听从父母安排", action: () => { game.modAttr({hap: -15, int: 10}); game.state.flags.obedient = true; game.saveAchievement("提线木偶"); ui.log("你成为了完美的做题机器，但丧失了童年的快乐。", "special"); game.advanceYear(); }},
+                { text: "掀翻桌子！谁也别想逼我", action: () => { game.modAttr({hap: 10, cha: 10, int: -10}); game.state.flags.rebel = true; game.saveAchievement("混世魔王"); ui.log("你被男女混合双打，但捍卫了灵魂的自由。", "danger"); game.advanceYear(); }},
+                { text: "表面答应，偷偷把苦瓜喂狗，逃课去玩", action: () => { game.modAttr({int: 15, wea: 5}); ui.log("你学会了阳奉阴违，极其圆滑。"); game.advanceYear(); }}
+            ]},
+            { age: 12, title: "12岁：青春萌动", desc: "进入初中，生理和心理的巨变让你感到迷茫：", choices: [
+                { text: "心无旁骛，死磕中考题", action: () => { game.modAttr({int: 15, phy: -5}); ui.log("你常年霸占年级第一。"); game.advanceYear(); }},
+                { text: "疯狂迷恋上同班同学，写情书", action: () => { game.modAttr({cha: 15, int: -15}); game.state.flags.earlyLove=true; ui.log("你体验了早恋的酸甜，成绩一落千丈。"); game.advanceYear(); }},
+                { text: "沉迷网络游戏和小说", action: () => { game.modAttr({hap: 15, int: -10, phy: -5}); ui.log("你成了网瘾少年，精神世界极度丰富。"); game.advanceYear(); }}
+            ]},
+            { age: 18, title: "18岁：高考大关", desc: "决定命运的时刻到了，你将去向何方？", choices: [
+                { text: "破釜沉舟，冲击顶尖985学府 (需智力>70)", req: (g) => g.attrs.int > 70, action: () => { game.state.edu = "985大学"; game.modAttr({phy: -15, wea: 10}); game.saveAchievement("天之骄子"); ui.log("你拿到了顶尖学府的录取通知书！", "special"); game.advanceYear(); }},
+                { text: "正常发挥，考个普通一本", req: (g) => g.attrs.int > 40, action: () => { game.state.edu = "普通本科"; game.modAttr({hap: 10}); ui.log("你进入了普通的大学。"); game.advanceYear(); }},
+                { text: "走艺考路线，进入美术/音乐学院 (需魅力>60)", req: (g) => g.attrs.cha > 60, action: () => { game.state.edu = "艺术学院"; game.modAttr({cha: 20}); ui.log("你走上了艺术之路。"); game.advanceYear(); }},
+                { text: "撕掉课本，老子直接混社会", action: () => { game.state.edu = "高中肄业"; game.state.career = "社会青年"; game.state.flags.rebel = true; game.saveAchievement("辍学青年"); ui.log("你叼着烟走入了霓虹闪烁的街头。", "grey"); game.advanceYear(); }},
+                { text: "出国镀金！钞能力启动 (需资产>30 或 财商>80)", req: (g) => g.state.cash > 30 || g.attrs.wea > 80, action: () => { game.state.edu = "海归精英"; game.state.cash -= 30; game.modAttr({cha: 20}); ui.log("你登上了跨洋航班，开启留学生涯。"); game.advanceYear(); }}
+            ]},
+            { age: 22, title: "22岁：步入社会", desc: "大学毕业，真正的人生游戏开始了：", choices: [
+                { text: "卷进互联网大厂拿命换钱 (需985/海归 + 智力>60)", req: (g) => (g.state.edu.includes("985")||g.state.edu.includes("海归")) && g.attrs.int>60, action: () => { game.state.career = "大厂程序员"; game.saveAchievement("格子衫狂魔"); ui.log("你拿到了顶级Offer，开始了天天加班的爆肝生活。", "special"); game.advanceYear(); }},
+                { text: "穿上白大褂，悬壶济世 (需985学历)", req: (g) => g.state.edu.includes("985"), action: () => { game.state.career = "三甲医生"; game.saveAchievement("仁心圣手"); ui.log("你发誓不负生命所托，成为白衣天使。", "special"); game.advanceYear(); }},
+                { text: "考编当老师，求个稳定安逸 (需普通本科及以上)", req: (g) => g.state.edu !== "高中肄业" && g.state.edu !== "未启蒙", action: () => { game.state.career = "人民教师"; game.modAttr({hap: 20, phy: 10}); ui.log("你端上了铁饭碗，岁月静好。"); game.advanceYear(); }},
+                { text: "追逐自由，成为独立艺术家 (需艺术学院)", req: (g) => g.state.edu === "艺术学院", action: () => { game.state.career = "艺术家"; game.modAttr({cha: 30, wea: -10}); ui.log("你在地下室里创作，幻想着有一天能办展。"); game.advanceYear(); }},
+                { text: "找个普通白领工作混日子", action: () => { game.state.career = "普通职员"; game.modAttr({hap: 5}); ui.log("你在格子间里拥有了一个工位。"); game.advanceYear(); }},
+                { text: "踏入灰色产业/黑道 (高风险高收益)", req: (g) => g.state.flags.rebel || g.attrs.hap < 30 || g.state.edu === "高中肄业", action: () => { game.state.career = "底层马仔"; game.modAttr({hap: -20}); ui.log("你接过了帮派的入场券，刀口舔血的日子开始了。", "grey"); game.advanceYear(); }}
+            ]},
+            { age: 30, title: "30岁：而立之年", desc: "三十岁了，社会对你的期望压在肩头：", choices: [
+                { text: "妥协相亲，贷款买房结婚成家 (需资产>20)", req:(g)=>g.state.cash>=20 && g.state.partner==="单身", action: () => { game.state.partner="已婚"; game.state.cash-=20; game.modAttr({hap: 15, phy:-10}); ui.log("你背上了房贷，组建了平淡的家庭。"); game.advanceYear(); }},
+                { text: "辞职创业！搏一搏单车变摩托 (需资产>50, 财商>70)", req:(g)=>g.state.cash>=50 && g.attrs.wea>70, action: () => { game.state.career="创业老板"; game.state.cash-=50; game.modAttr({wea: 30, hap:-10}); ui.log("你租了办公室，成为CEO，压力倍增！", "special"); game.advanceYear(); }},
+                { text: "坚决不婚，自己赚钱自己花", action: () => { game.modAttr({hap: 10, wea: 10}); ui.log("你扛住了催婚压力，享受单身贵族的生活。"); game.advanceYear(); }},
+                { text: "背起行囊，裸辞去环游世界！ (需资产>100)", req:(g)=>g.state.cash>=100, action: () => { game.state.career="无业游民"; game.state.cash-=100; game.modAttr({hap: 50, cha: 30}); game.saveAchievement("环游世界"); ui.log("你看遍了极光和雪山，灵魂得到了极大的自由！", "special"); game.advanceYear(); }}
+            ]},
+            { age: 45, title: "45岁：中年危机", desc: "体力下降，生活陷入一滩死水，危机悄然而至：", choices: [
+                { text: "花大价钱买各种保健品续命 (需资产>30)", req:(g)=>g.state.cash>=30, action: () => { game.state.cash-=30; game.modAttr({phy: 20}); ui.log("你开始保温杯里泡枸杞。"); game.advanceYear(); }},
+                { text: "陷入婚外情诱惑 (降智商/升魅力)", req:(g)=>g.state.partner==="已婚", action: () => { game.modAttr({cha: 20, int:-20, hap:-10}); ui.log("你卷入了复杂的感情纠葛，家里鸡犬不宁。", "danger"); game.advanceYear(); }},
+                { text: "咬牙忍受，扛起家庭重担", action: () => { game.modAttr({phy:-15, hap:-10}); ui.log("你咽下所有的苦，继续像老黄牛一样工作。"); game.advanceYear(); }}
+            ]},
+            { age: 60, title: "60岁：花甲退休", desc: "正式办理了退休手续（如果还没死或者没进局子）：", choices: [
+                { text: "回老家带孙子，颐养天年", req:(g)=>g.state.partner==="已婚", action: () => { game.state.career="退休大爷/大妈"; game.modAttr({hap: 20, phy:-5}); game.saveAchievement("平平淡淡"); ui.log("你天天推着婴儿车逛公园。"); game.advanceYear(); }},
+                { text: "闲不住，去找个小区保安的工作", action: () => { game.state.career="小区保安"; game.modAttr({phy:-10}); game.state.cash+=5; ui.log("你穿上保安服，每天给业主开门。"); game.advanceYear(); }},
+                { text: "报名老年大学，学习新技能", action: () => { game.state.career="退休人员"; game.modAttr({int: 15, cha: 10}); ui.log("你学会了摄影和短视频，成了老年网红。"); game.advanceYear(); }}
+            ]},
+            { age: 75, title: "75岁：夕阳无限", desc: "步入晚年，你开始思考身后的事情：", choices: [
+                { text: "立遗嘱，把资产全部留给后代", action: () => { game.state.cash=0; game.modAttr({hap: 20}); ui.log("你把一切交接清楚，内心释然。"); game.advanceYear(); }},
+                { text: "把所有钱捐给慈善机构", req:(g)=>g.state.cash>50, action: () => { game.state.cash=0; game.modAttr({cha: 50, hap: 30}); ui.log("你的善举上了当地新闻头条。", "special"); game.advanceYear(); }},
+                { text: "死磕到底，花光所有钱去最高级疗养院", req:(g)=>g.state.cash>100, action: () => { game.state.cash-=100; game.modAttr({phy: 30, hap: 10}); ui.log("你享受着最顶级的医疗服务。"); game.advanceYear(); }}
+            ]}
+        ];
+
+        // ================= 数据库：海量常规选项池 (约100条) =================
+        const EVENT_POOL = [
+            // --- 婴儿/幼儿期 (0-4) ---
+            { id: 'i1', minAge: 1, maxAge: 2, text: "第一次开口叫人", log: "你口齿清晰地喊了爸爸妈妈，他们高兴坏了。", eff: {cha: 5, hap: 2} },
+            { id: 'i2', minAge: 2, maxAge: 4, text: "抓到一只大虫子放进嘴里", log: "你吃了一口蛋白质，肚子疼了三天。", eff: {phy: -5, int: -2}, type: "danger" },
+            { id: 'i3', minAge: 1, maxAge: 4, text: "把家里的古董花瓶打碎了", log: "被罚站了一下午，你学会了察言观色。", eff: {int: 5, hap: -5} },
+            { id: 'i4', minAge: 3, maxAge: 4, text: "在墙上疯狂乱画", log: "展现出了惊人的艺术天赋。", eff: {cha: 5, wea: 2} },
+            { id: 'i5', minAge: 1, maxAge: 4, text: "抢别人的奶嘴", log: "从小就懂得弱肉强食。", eff: {wea: 5, cha: -2} },
+
+            // --- 童年期 (5-12) ---
+            { id: 'c1', minAge: 5, maxAge: 12, req: g=>g.state.flags.obedient, text: "拿了三好学生奖状", log: "你成为了别人家的孩子。", eff: {int: 5, hap: 5, cha: 5} },
+            { id: 'c2', minAge: 5, maxAge: 12, req: g=>g.state.flags.rebel, text: "用炮仗炸牛粪", log: "炸了自己一身，被全村嘲笑。", eff: {cha: -10, phy: 2} },
+            { id: 'c3', minAge: 7, maxAge: 12, text: "在路边捡到 100 块钱", log: "你买了一堆零食分给小伙伴，成了大王。", eff: {cha: 10, cash: 1, luc: 5} },
+            { id: 'c4', minAge: 8, maxAge: 12, text: "偷偷从妈妈钱包拿钱买玩具", log: "被发现后毒打一顿，财商意外提升。", eff: {wea: 5, hap: -10, phy: -5}, type: "warning" },
+            { id: 'c5', minAge: 9, maxAge: 12, text: "参加学校运动会跑了第一", log: "从小就展现出强健的体魄。", eff: {phy: 10, cha: 5} },
+            { id: 'c6', minAge: 6, maxAge: 12, text: "装病不去上学", log: "你在家看了一天动画片，美滋滋。", eff: {hap: 5, int: -2} },
+            { id: 'c7', minAge: 10, maxAge: 12, text: "迷路走到了城市的另一边", log: "你靠自己问路走回了家，胆识过人。", eff: {int: 5, wea: 2} },
+            { id: 'c8', minAge: 5, maxAge: 12, text: "收养一只流浪小猫", log: "小猫成了你最好的朋友。", eff: {hap: 10, cha: 5} },
+            { id: 'c9', minAge: 8, maxAge: 12, text: "被高年级同学欺负", log: "你没有哭，反咬了对方一口。", eff: {phy: 2, hap: -5} },
+            { id: 'c10', minAge: 6, maxAge: 12, text: "迷上看科普读物", log: "你对宇宙产生了浓厚的兴趣。", eff: {int: 8} },
+
+            // --- 青春/校园期 (13-21) ---
+            { id: 't1', minAge: 13, maxAge: 17, req: g=>g.state.flags.earlyLove, text: "初恋跟别人跑了", log: "你在雨中狂奔，体会到了心碎的感觉。", eff: {hap: -20, int: 10, cha: -5}, stateChange: {partner: "单身"} },
+            { id: 't2', minAge: 14, maxAge: 17, text: "沉迷贴吧和网文", log: "你的视力下降，但文笔大涨。", eff: {int: 5, phy: -5} },
+            { id: 't3', minAge: 15, maxAge: 17, text: "脸长满了青春痘", log: "你变得非常自卑，不爱说话。", eff: {cha: -15, hap: -5} },
+            { id: 't4', minAge: 16, maxAge: 17, text: "期末考试作弊被抓", log: "全校通报批评，留校察看。", eff: {hap: -15, wea: -5}, type: "danger" },
+            { id: 't5', minAge: 13, maxAge: 17, text: "疯狂锻炼肌肉/练瑜伽", log: "你拥有了让同龄人羡慕的身材。", eff: {phy: 15, cha: 15} },
+            { id: 't6', minAge: 18, maxAge: 21, req: g=>g.state.edu.includes("大学") || g.state.edu.includes("学院"), text: "大学室友拉你搞微商创业", log: "毫无悬念地亏光了生活费。", eff: {wea: -10, cash: -2}, type: "warning" },
+            { id: 't7', minAge: 18, maxAge: 21, req: g=>g.state.edu.includes("大学"), text: "拿到了国家一等奖学金", log: "你成了学院的传说。", eff: {int: 10, cash: 5, hap: 10}, type: "special" },
+            { id: 't8', minAge: 19, maxAge: 21, req: g=>g.state.edu.includes("海归"), text: "在海外赌场一掷千金", log: "输个精光，只能吃一个月泡面。", eff: {cash: -20, hap: -15}, type: "danger" },
+            { id: 't9', minAge: 18, maxAge: 21, text: "去快餐店打零工", log: "你体会到了赚钱的辛苦。", eff: {wea: 5, cash: 2, phy: -2} },
+            { id: 't10', minAge: 18, maxAge: 21, text: "参加电竞比赛", log: "拿了市级亚军，赢得奖金。", eff: {cha: 5, cash: 5, int: 2} },
+            
+            // --- 职场常规 (22-55) ---
+            { id: 'a1', minAge: 23, maxAge: 40, req: g=>g.state.career==="大厂程序员", text: "负责核心项目通宵上线", log: "系统成功，拿了期权！但去查出了轻度脂肪肝。", eff: {phy: -15, cash: 60}, type: "special" },
+            { id: 'a2', minAge: 23, maxAge: 40, req: g=>g.state.career==="三甲医生", text: "连续做 14 小时高难手术", log: "抢救成功！家属下跪感谢，你累得瘫在走廊。", eff: {phy: -20, cha: 10, hap: 15}, type: "special" },
+            { id: 'a3', minAge: 23, maxAge: 45, req: g=>g.state.career==="普通职员", text: "替傻逼领导背黑锅", log: "你被扣了绩效，气得半死。", eff: {hap: -15, cash: -5}, type: "danger" },
+            { id: 'a4', minAge: 24, maxAge: 50, req: g=>g.state.partner==="单身" && g.attrs.cha > 50, text: "被高富帅/白富美疯狂追求", log: "你迎来了甜蜜的爱情。", eff: {hap: 20, cash: 10}, stateChange: {partner: "热恋中"} },
+            { id: 'a5', minAge: 25, maxAge: 55, req: g=>g.state.cash>30, text: "听信内幕消息重仓炒股", log: "A股大跌，你被深度套牢！", eff: {wea: -10, hap: -20, cash: -30}, type: "danger" },
+            { id: 'a6', minAge: 25, maxAge: 55, req: g=>g.attrs.wea>80 && g.state.cash>50, text: "精准投资初创 AI 公司", log: "公司估值暴涨，你财富自由了！", eff: {wea: 20, cash: 300, hap: 30}, type: "special" },
+            { id: 'a7', minAge: 26, maxAge: 50, req: g=>g.state.partner==="已婚", text: "迎接新生命的降临", log: "你的孩子出生了，你感到责任重大但也无比幸福。", eff: {hap: 30, cash: -20, phy: -10} },
+            { id: 'a8', minAge: 30, maxAge: 55, text: "下班路上出了严重车祸", log: "在 ICU 躺了半个月，捡回一条命。", eff: {phy: -30, cash: -30, hap: -20}, type: "danger" },
+            { id: 'a9', minAge: 28, maxAge: 55, req: g=>g.state.career==="人民教师", text: "被评为省级优秀教师", log: "荣誉加身，校长亲自给你颁奖。", eff: {cha: 15, hap: 10, cash: 5} },
+            { id: 'a10', minAge: 25, maxAge: 55, req: g=>g.state.career==="艺术家", text: "一幅画/一首歌意外在网上爆火", log: "你一夜成名，各路资本找上门。", eff: {cha: 30, cash: 100}, type: "special" },
+            { id: 'a11', minAge: 35, maxAge: 55, text: "参加高中同学聚会", log: "看着别人飞黄腾达，你产生了深深的容貌和财富焦虑。", eff: {hap: -10} },
+            { id: 'a12', minAge: 25, maxAge: 55, text: "突然迷上钓鱼/健身/烘焙", log: "你找到了精神寄托，生活多了一丝亮色。", eff: {hap: 10, phy: 5, cash: -2} },
+
+            // --- 灰色产业/极度危险线 (22-55) ---
+            { id: 'g1', minAge: 22, maxAge: 40, req: g=>g.state.career==="底层马仔", text: "在帮派火拼中替老大挡刀", log: "你在医院躺了仨月，但被提拔为帮派骨干。", eff: {phy: -25, hap: -10, cash: 50}, stateChange: {career: "黑道头目"}, type: "grey" },
+            { id: 'g2', minAge: 25, maxAge: 55, req: g=>g.state.career==="黑道头目", text: "组织跨国大案，狂敛黑金", log: "钱多得不知道怎么花，但你天天失眠，总觉得警察在敲门。", eff: {hap: -30, cash: 500}, type: "grey" },
+            { id: 'g3', minAge: 25, maxAge: 55, req: g=>g.state.career==="黑道头目"||g.state.career==="底层马仔", text: "遭遇警方雷霆行动全面清网！", log: "你被捕入狱，所有非法资产全部没收！", eff: {hap: -50, phy: -20, cha: -50}, stateChange: {career: "囚犯", cash: 0}, type: "danger" },
+            { id: 'g4', minAge: 22, maxAge: 55, req: g=>g.state.career==="囚犯", text: "在狱中好好表现，踩缝纫机", log: "你获得了减刑，并在狱中强身健体。", eff: {phy: 10, int: -5} },
+            { id: 'g5', minAge: 25, maxAge: 50, req: g=>g.state.career==="囚犯", text: "狱中拉帮结派斗殴", log: "被狱警严厉处罚，关入禁闭室。", eff: {phy: -15, hap: -15}, type: "danger" },
+
+            // --- 晚年期 (56+) ---
+            { id: 'o1', minAge: 56, maxAge: 80, text: "听信推销，买了一堆神仙水", log: "发现被骗，气得心脏病发作。", eff: {phy: -15, hap: -10, cash: -10}, type: "danger" },
+            { id: 'o2', minAge: 60, maxAge: 80, req: g=>g.state.cash>100, text: "去海南买套海景房过冬", log: "阳光沙滩，每天生活美滋滋。", eff: {hap: 15, phy: 10, cash: -50} },
+            { id: 'o3', minAge: 65, maxAge: 85, text: "在公园下象棋，把对方老头气进医院", log: "你赢了棋，但赔了医药费。", eff: {int: 5, hap: 5, cash: -5} },
+            { id: 'o4', minAge: 60, maxAge: 80, text: "学会了用智能手机刷短视频", log: "沉迷网络无法自拔，颈椎病犯了。", eff: {phy: -5, hap: 5} },
+            { id: 'o5', minAge: 70, maxAge: 90, text: "老伴或老友离世", log: "你参加了葬礼，深感生命的脆弱与孤独。", eff: {hap: -20, phy: -10}, type: "warning" },
+            { id: 'o6', minAge: 65, maxAge: 90, req: g=>g.state.career==="隐士", text: "在深山老林里发现了百年野山参", log: "吃下后，仿佛返老还童！", eff: {phy: 30, luc: 10}, type: "special" },
+
+            // --- 极品运气事件 (无年龄限制，靠隐藏幸运值) ---
+            { id: 'l1', minAge: 18, maxAge: 60, req: g=>g.attrs.luc > 85 && g.state.cash < 50, text: "随手买了一张彩票", log: "天降横财！！你中了头奖！！", eff: {cash: 1000, hap: 50, wea: -10}, type: "special" },
+            { id: 'l2', minAge: 18, maxAge: 70, req: g=>g.attrs.luc > 80, text: "走在路上突然被星探/贵人发掘", log: "你的命运齿轮开始转动。", eff: {cha: 30, wea: 20, cash: 50}, type: "special" }
+        ];
+
+        // ================= UI与交互控制器 =================
+        const ui = {
+            switchScreen(screen) {
+                document.getElementById('startScreen').classList.add('hidden');
+                document.getElementById('achScreen').classList.add('hidden');
+                document.getElementById('gameUI').classList.add('hidden');
+                if (screen === 'start') document.getElementById('startScreen').classList.remove('hidden');
+                if (screen === 'ach') {
+                    document.getElementById('achScreen').classList.remove('hidden');
+                    this.renderAchievements();
+                }
+                if (screen === 'game') document.getElementById('gameUI').classList.remove('hidden');
+            },
+            showAchievements() { this.switchScreen('ach'); },
+            hideAchievements() { this.switchScreen('start'); },
+            
+            renderAchievements() {
+                const grid = document.getElementById('achGrid');
+                grid.innerHTML = '';
+                for(let key in ACH_DATA) {
+                    let has = game.achievements[key];
+                    grid.innerHTML += `
+                        <div class="ach-card ${has?'unlocked':''}">
+                            <div class="ach-icon">${ACH_DATA[key].icon}</div>
+                            <div class="ach-name">${key}</div>
+                            <div class="ach-desc">${has ? ACH_DATA[key].desc : '???' }</div>
+                        </div>`;
+                }
+            },
+
+            update() {
+                document.getElementById('ui-age').innerText = game.age;
+                document.getElementById('ui-stage').innerText = game.state.stage;
+                document.getElementById('ui-edu').innerText = game.state.edu;
+                document.getElementById('ui-career').innerText = game.state.career;
+                document.getElementById('ui-partner').innerText = game.state.partner;
+                
+                let cashDom = document.getElementById('ui-wealth');
+                cashDom.innerText = game.state.cash + " 万";
+                if(game.state.cash < 0) cashDom.style.color = "var(--danger)";
+                else cashDom.style.color = "var(--warning)";
+
+                ['int', 'phy', 'cha', 'wea', 'hap', 'luc'].forEach(k => {
+                    document.getElementById(`v-${k}`).innerText = game.attrs[k];
+                    document.getElementById(`b-${k}`).style.width = `${game.attrs[k]}%`;
+                });
+            },
+
+            log(text, cssClass = "") {
+                const box = document.getElementById('logBox');
+                const div = document.createElement('div');
+                div.className = `log-item ${cssClass}`;
+                div.innerHTML = text;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            },
+
+            renderChoices(options) {
+                const box = document.getElementById('choiceBox');
+                box.innerHTML = '';
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    
+                    let disable = false;
+                    if(opt.req && !opt.req(game)) disable = true;
+                    
+                    if(disable) {
+                        btn.disabled = true;
+                        btn.innerHTML = `<span>${opt.text}</span> <span class="choice-req">[条件不足]</span>`;
+                    } else {
+                        btn.innerHTML = `<span>${opt.text}</span>`;
+                        btn.onclick = () => {
+                            box.innerHTML = ''; // 清空防误触
+                            game.executeChoice(opt);
+                        };
+                    }
+                    box.appendChild(btn);
+                });
+                box.scrollTop = 0; // 滚动回顶部
+            },
+
+            showModal(title, desc, choices) {
+                document.getElementById('modalTitle').innerText = title;
+                document.getElementById('modalDesc').innerHTML = desc;
+                const box = document.getElementById('modalChoices');
+                box.innerHTML = '';
+                
+                choices.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.style.marginBottom = '10px';
+                    
+                    let disable = false;
+                    if(opt.req && !opt.req(game)) disable = true;
+                    
+                    if(disable) {
+                        btn.disabled = true;
+                        btn.innerHTML = `<span>${opt.text}</span> <span class="choice-req">[条件不足]</span>`;
+                    } else {
+                        btn.innerHTML = `<span>${opt.text}</span>`;
+                        btn.onclick = () => {
+                            document.getElementById('specialModal').classList.remove('active');
+                            opt.action();
+                        };
+                    }
+                    box.appendChild(btn);
+                });
+                
+                document.getElementById('specialModal').classList.add('active');
+            }
+        };
+
+        // ================= 极简音频引擎 =================
+        const audio = {
+            ctx: null, isPlaying: false, timer: null,
+            init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            toggle() {
+                if(!this.ctx) this.init();
+                if(this.isPlaying) this.stop(); else this.start();
+                document.getElementById('musicBtn').innerText = this.isPlaying ? "🔊" : "🔇";
+                document.getElementById('musicBtn').style.background = this.isPlaying ? "var(--accent)" : "var(--bg-panel)";
+            },
+            start() {
+                this.isPlaying = true;
+                const notes = [196, 220, 261.63, 329.63, 392]; // C大调五声音阶 (沉浸感)
+                this.timer = setInterval(() => {
+                    if(!this.isPlaying) return;
+                    try {
+                        let osc = this.ctx.createOscillator();
+                        let gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(notes[Math.floor(Math.random()*notes.length)], this.ctx.currentTime);
+                        gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.5);
+                        osc.connect(gain); gain.connect(this.ctx.destination);
+                        osc.start(); osc.stop(this.ctx.currentTime + 2.5);
+                    }catch(e){}
+                }, 2500);
+            },
+            stop() { this.isPlaying = false; clearInterval(this.timer); }
+        };
+
+        // 启动实例
+        const game = new Engine();
+    </script>
+</body>
+</html>
